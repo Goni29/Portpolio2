@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ SITE_NAME }} | 로그인{% endblock %}
+
+{% block content %}
+<section class="sec consult-password-wrap">
+  <div class="container">
+    <div class="board-inner consult-panel">
+
+      <div class="consult-head compact">
+        <h2 class="consult-title">로그인</h2>
+        <p class="consult-sub">
+          포트폴리오 데모 화면입니다. <b>admin 계정만</b> 실제 로그인됩니다.
+        </p>
+      </div>
+
+      <form class="consult-form" method="post" action="{{ url_for('login', next=next) }}">
+        <label class="field">
+          <span>아이디</span>
+          <input name="username" placeholder="(관리자) admin" autocomplete="username" />
+        </label>
+
+        <label class="field">
+          <span>비밀번호</span>
+          <input name="password" type="password" placeholder="비밀번호" autocomplete="current-password" />
+        </label>
+
+        <div class="consult-actions">
+          <a class="btn btn-ghost" href="{{ url_for('signup') }}" role="button">회원가입</a>
+          <button class="btn btn-dark" type="submit">
+            <span aria-hidden="true">🔐</span> 로그인
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</section>
+{% endblock %}

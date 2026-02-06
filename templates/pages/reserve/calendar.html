@@ -1,0 +1,549 @@
+{% extends "base.html" %}
+{% block title %}{{ SITE_NAME }} | 달력예약{% endblock %}
+
+{% block content %}
+
+<section class="sec reserve-cal">
+    <div class="container">
+
+        <div class="cal-head">
+            <div class="cal-month-wrap">
+                <button class="cal-nav" type="button" id="calPrev" aria-label="이전 달">‹</button>
+                <div class="cal-month" id="calMonthText">2026년 02월</div>
+                <button class="cal-nav" type="button" id="calNext" aria-label="다음 달">›</button>
+            </div>
+
+            <div class="cal-sub">원하시는 예약 날짜를 선택해주세요.</div>
+        </div>
+
+        <div class="cal-cta">
+            <!-- ✅ 달력예약 페이지 상단에 존재해야 함 -->
+            <button class="btn btn-dark" type="button" id="calConfirmBtn">
+                <span aria-hidden="true">📅</span> 예약확인
+            </button>
+        </div>
+
+        <div class="cal-divider"></div>
+
+        <div class="cal-wrap">
+            <div class="cal-week cal-week--head">
+                <div class="cal-dow sun">일요일</div>
+                <div class="cal-dow">월요일</div>
+                <div class="cal-dow">화요일</div>
+                <div class="cal-dow">수요일</div>
+                <div class="cal-dow">목요일</div>
+                <div class="cal-dow">금요일</div>
+                <div class="cal-dow sat">토요일</div>
+            </div>
+
+            <div class="cal-grid" id="calGrid"></div>
+        </div>
+
+    </div>
+</section>
+
+<!-- =========================
+     Confirm Modal (Reference style)
+     - 날짜 클릭하면 바로 뜸
+     ========================= -->
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rsv-modal">
+
+            <div class="modal-header rsv-head">
+                <div class="rsv-title">예약자 정보</div>
+                <button type="button" class="rsv-x" data-bs-dismiss="modal" aria-label="닫기">×</button>
+            </div>
+
+            <div class="modal-body rsv-body">
+                <form class="rsv-form" id="reserveForm" onsubmit="return false;">
+
+                    <div class="rsv-grid">
+                        <!-- 예약 선택일 -->
+                        <div class="rsv-row">
+                            <div class="rsv-label">예약 선택일</div>
+                            <div class="rsv-field">
+                                <input class="rsv-input" id="cfDateInput" readonly>
+                            </div>
+                        </div>
+
+                        <!-- 예약 선택 시간 -->
+                        <div class="rsv-row">
+                            <div class="rsv-label">예약 선택 시간</div>
+                            <div class="rsv-field">
+                                <select class="rsv-input" id="cfTimeSelect">
+                                    <option value="">예약 시간을 선택해주세요.</option>
+                                </select>
+                                <!-- ✅ 커스텀 화살표 -->
+                                <svg class="rsv-select-arrow" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M7 10l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2"
+                                        stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        <!-- 이름 -->
+                        <div class="rsv-row">
+                            <div class="rsv-label">이름</div>
+                            <div class="rsv-field">
+                                <input class="rsv-input" id="cfName" placeholder="이름">
+                            </div>
+                        </div>
+
+                        <!-- 연락처 -->
+                        <div class="rsv-row">
+                            <div class="rsv-label">연락처</div>
+                            <div class="rsv-field">
+                                <input class="rsv-input" id="cfPhone" placeholder="- 를 제외한 숫자만 입력">
+                            </div>
+                        </div>
+
+                        <!-- 생년월일 -->
+                        <div class="rsv-row">
+                            <div class="rsv-label">생년월일</div>
+                            <div class="rsv-field">
+                                <input class="rsv-input" id="cfBirth" placeholder="생년월일(YYYY-MM-DD)">
+                            </div>
+                        </div>
+
+                        <!-- 성별 -->
+                        <div class="rsv-row">
+                            <div class="rsv-label">성별</div>
+                            <div class="rsv-field">
+                                <div class="rsv-radio">
+                                    <label class="rsv-radio-item">
+                                        <input type="radio" name="cfGender" value="남">
+                                        <span>남</span>
+                                    </label>
+                                    <label class="rsv-radio-item">
+                                        <input type="radio" name="cfGender" value="여">
+                                        <span>여</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 진료종류 -->
+                        <div class="rsv-row">
+                            <div class="rsv-label">진료종류</div>
+                            <div class="rsv-field">
+                                <div class="rsv-radio">
+                                    <label class="rsv-radio-item">
+                                        <input type="radio" name="cfVisitType" value="초진">
+                                        <span>초진</span>
+                                    </label>
+                                    <label class="rsv-radio-item">
+                                        <input type="radio" name="cfVisitType" value="재진">
+                                        <span>재진</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 희망진료사항 -->
+                        <div class="rsv-row rsv-row--textarea">
+                            <div class="rsv-label">희망진료사항</div>
+                            <div class="rsv-field">
+                                <textarea class="rsv-input rsv-textarea" id="cfMemo"
+                                    placeholder="증상/요청사항을 간단히 적어주세요."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rsv-note">
+                        2024년 5월 20일부터 건강보험 본인확인 의무화 제도가 시행되며 병원 방문 시 신분증을 필수로 제시해주어야합니다.
+                    </div>
+
+                    <div class="rsv-consent">
+                        <label class="rsv-check rsv-check--all">
+                            <input type="checkbox" id="agreeAll">
+                            <span>모두 동의합니다</span>
+                        </label>
+
+                        <div class="rsv-consent-list">
+                            <label class="rsv-check">
+                                <input type="checkbox" class="agree-item" id="agreeUse">
+                                <span>이용약관 동의 <a href="javascript:void(0)" class="rsv-link">약관보기</a></span>
+                            </label>
+
+                            <label class="rsv-check">
+                                <input type="checkbox" class="agree-item" id="agreePrivacy">
+                                <span>개인정보 취급방침 동의 <a href="javascript:void(0)" class="rsv-link">약관보기</a></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="rsv-actions">
+                        <button class="rsv-submit" type="button" id="cfSubmitBtn">예약신청</button>
+                    </div>
+
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- =========================
+     Reserve Check Modal (조회하기)
+     - 상단 "예약확인" 버튼 전용
+     ========================= -->
+<div class="modal fade" id="checkModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rsv-modal">
+
+            <div class="modal-header rsv-head">
+                <div class="rsv-title">예약확인</div>
+                <button type="button" class="rsv-x" data-bs-dismiss="modal" aria-label="닫기">×</button>
+            </div>
+
+            <div class="modal-body rsv-body">
+                <form class="rsv-form" id="checkForm" onsubmit="return false;">
+
+                    <div class="rsv-grid">
+                        <div class="rsv-row">
+                            <div class="rsv-label">예약자 이름</div>
+                            <div class="rsv-field">
+                                <input class="rsv-input" id="chkName" placeholder="예약자 이름을 입력해 주세요.">
+                            </div>
+                        </div>
+
+                        <div class="rsv-row">
+                            <div class="rsv-label">휴대폰 번호</div>
+                            <div class="rsv-field">
+                                <input class="rsv-input" id="chkPhone" placeholder="- 없이 숫자만 입력해 주세요.">
+                            </div>
+                        </div>
+
+                        <div class="rsv-row">
+                            <div class="rsv-label">생년월일</div>
+                            <div class="rsv-field">
+                                <input class="rsv-input" id="chkBirth" placeholder="생년월일(YYYY-MM-DD)">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rsv-actions">
+                        <button class="rsv-submit" type="button" id="chkSubmitBtn">조회하기</button>
+                    </div>
+
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        const monthText = document.getElementById("calMonthText");
+        const grid = document.getElementById("calGrid");
+        const prev = document.getElementById("calPrev");
+        const next = document.getElementById("calNext");
+        const confirmBtnTop = document.getElementById("calConfirmBtn"); // ✅ 상단 예약확인(조회)
+
+        if (!monthText || !grid || !prev || !next) return;
+
+        // ✅ 시간 슬롯
+        const TIME_SLOTS = [
+            "10:00", "10:30", "11:00", "11:30",
+            "14:00", "14:30", "15:00", "15:30",
+            "16:00", "16:30", "17:00"
+        ];
+
+        // 선택값(예약신청용)
+        let selectedDate = null; // "YYYY-MM-DD"
+        let selectedTime = null; // "HH:MM"
+
+        // 공휴일
+        let holidaySet = new Set();
+        let holidayMap = {}; // {"YYYY-MM-DD": "설날", ...}
+
+        function pad(n) { return String(n).padStart(2, "0"); }
+        function keyFromDateObj(date) {
+            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+        }
+
+        async function loadHolidays(year) {
+            try {
+                const res = await fetch(`/api/holidays?year=${encodeURIComponent(year)}`, { cache: "no-store" });
+                if (!res.ok) throw new Error("holiday api not ok");
+                const json = await res.json();
+
+                const dates = Array.isArray(json.dates) ? json.dates : [];
+                holidaySet = new Set(dates);
+                holidayMap = (json.map && typeof json.map === "object") ? json.map : {};
+            } catch (e) {
+                console.warn("holiday fetch failed:", e);
+                holidaySet = new Set();
+                holidayMap = {};
+            }
+        }
+
+        function holidayLabel(date) {
+            const key = keyFromDateObj(date);
+            return holidayMap[key] || "";
+        }
+
+        // ✅ 예약종료: 일요일 OR 공휴일 (원하면 토/일로 바꿀 수 있음)
+        function isClosed(date) {
+            const dow = date.getDay(); // 0=일
+            const key = keyFromDateObj(date);
+            return (dow === 0) || holidaySet.has(key);
+        }
+
+        // ---------------------------
+        // 모달 핸들(예약신청/예약확인 분리)
+        // ---------------------------
+        let reserveModal = null; // confirmModal = 예약신청
+        function getReserveModal() {
+            const el = document.getElementById("confirmModal");
+            if (!el || !window.bootstrap) return null;
+            if (!reserveModal) reserveModal = new bootstrap.Modal(el);
+            return reserveModal;
+        }
+
+        let checkModal = null; // checkModal = 예약확인(조회)
+        function getCheckModal() {
+            const el = document.getElementById("checkModal");
+            if (!el || !window.bootstrap) return null;
+            if (!checkModal) checkModal = new bootstrap.Modal(el);
+            return checkModal;
+        }
+
+        function fillReserveModal() {
+            const dateInput = document.getElementById("cfDateInput");
+            const timeSelect = document.getElementById("cfTimeSelect");
+
+            if (dateInput) dateInput.value = selectedDate || "";
+
+            if (timeSelect) {
+                timeSelect.innerHTML = `<option value="">예약 시간을 선택해주세요.</option>`;
+                TIME_SLOTS.forEach(t => {
+                    const opt = document.createElement("option");
+                    opt.value = t;
+                    opt.textContent = t;
+                    if (selectedTime === t) opt.selected = true;
+                    timeSelect.appendChild(opt);
+                });
+
+                timeSelect.onchange = () => {
+                    selectedTime = timeSelect.value || null;
+                };
+            }
+        }
+
+        function resetReserveForm() {
+            // ✅ 예약신청 폼 초기화(다음 예약 시 정보 남지 않게)
+            ["cfName", "cfPhone", "cfBirth", "cfMemo"].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = "";
+            });
+
+            // 라디오 초기화
+            document.querySelectorAll('input[name="cfGender"]').forEach(r => r.checked = false);
+            document.querySelectorAll('input[name="cfVisitType"]').forEach(r => r.checked = false);
+
+            // 시간 선택 초기화
+            const timeSelect = document.getElementById("cfTimeSelect");
+            if (timeSelect) timeSelect.value = "";
+
+            // 동의 초기화
+            const agreeAll = document.getElementById("agreeAll");
+            const agreeItems = Array.from(document.querySelectorAll(".agree-item"));
+            if (agreeAll) agreeAll.checked = false;
+            agreeItems.forEach(chk => chk.checked = false);
+
+            // 선택값 초기화
+            selectedDate = null;
+            selectedTime = null;
+
+            const dateInput = document.getElementById("cfDateInput");
+            if (dateInput) dateInput.value = "";
+        }
+
+        function openReserveModal() {
+            if (!selectedDate) return;
+            fillReserveModal();
+            const m = getReserveModal();
+            if (m) m.show();
+            else alert("Bootstrap 모달이 아직 로드되지 않았습니다. (bootstrap.bundle 확인)");
+        }
+
+        // ✅ 상단 "예약확인" 버튼은 "조회 모달"만 열기
+        if (confirmBtnTop) {
+            confirmBtnTop.addEventListener("click", () => {
+                const m = getCheckModal();
+                if (m) m.show();
+                else alert("Bootstrap 모달이 아직 로드되지 않았습니다. (bootstrap.bundle 확인)");
+            });
+        }
+
+        // ✅ 동의 전체선택(예약신청 폼용)
+        const agreeAll = document.getElementById("agreeAll");
+        const agreeItems = Array.from(document.querySelectorAll(".agree-item"));
+        if (agreeAll && agreeItems.length) {
+            agreeAll.addEventListener("change", () => {
+                agreeItems.forEach(chk => chk.checked = agreeAll.checked);
+            });
+            agreeItems.forEach(chk => {
+                chk.addEventListener("change", () => {
+                    agreeAll.checked = agreeItems.every(x => x.checked);
+                });
+            });
+        }
+
+        // ✅ 예약신청 버튼(예약신청 모달 내부)
+        const cfSubmitBtn = document.getElementById("cfSubmitBtn");
+        if (cfSubmitBtn) {
+            cfSubmitBtn.addEventListener("click", () => {
+                const name = (document.getElementById("cfName")?.value || "").trim();
+                const phone = (document.getElementById("cfPhone")?.value || "").trim();
+                const birth = (document.getElementById("cfBirth")?.value || "").trim();
+                const timeVal = (document.getElementById("cfTimeSelect")?.value || "").trim();
+                const okTerms = document.getElementById("agreeUse")?.checked;
+                const okPrivacy = document.getElementById("agreePrivacy")?.checked;
+
+                if (!selectedDate) return alert("예약 날짜를 선택해주세요.");
+                if (!timeVal) return alert("예약 시간을 선택해주세요.");
+                if (!name) return alert("이름을 입력해주세요.");
+                if (!phone) return alert("연락처를 입력해주세요.");
+                if (!birth) return alert("생년월일을 입력해주세요.");
+                if (!okTerms || !okPrivacy) return alert("필수 약관에 동의해주세요.");
+
+                alert("데모: 예약이 접수되었습니다!");
+
+                // ✅ 접수 후 초기화 + 닫기
+                resetReserveForm();
+                const m = getReserveModal();
+                if (m) m.hide();
+            });
+        }
+
+        // ✅ 조회하기 버튼(예약확인 모달 내부)
+        const chkSubmitBtn = document.getElementById("chkSubmitBtn");
+        if (chkSubmitBtn) {
+            chkSubmitBtn.addEventListener("click", () => {
+                const n = (document.getElementById("chkName")?.value || "").trim();
+                const p = (document.getElementById("chkPhone")?.value || "").trim();
+                const b = (document.getElementById("chkBirth")?.value || "").trim();
+
+                if (!n) return alert("예약자 이름을 입력해 주세요.");
+                if (!p) return alert("휴대폰 번호를 입력해 주세요.");
+                if (!b) return alert("생년월일을 입력해 주세요.");
+
+                alert("데모: 예약 조회 결과가 표시됩니다. (서버 연동 시 실제 조회)");
+                // 필요하면 여기서 fetch로 서버 조회 연동
+            });
+        }
+
+        // ---------------------------
+        // 달력 렌더
+        // ---------------------------
+        let cur = new Date(2026, 1, 1); // 2026-02
+
+        function render() {
+            const y = cur.getFullYear();
+            const m = cur.getMonth();
+            monthText.textContent = `${y}년 ${pad(m + 1)}월`;
+            grid.innerHTML = "";
+
+            const first = new Date(y, m, 1);
+            const last = new Date(y, m + 1, 0);
+            const startDow = first.getDay();
+            const totalDays = last.getDate();
+
+            // 앞 빈칸
+            for (let i = 0; i < startDow; i++) {
+                const cell = document.createElement("div");
+                cell.className = "cal-cell is-empty";
+                grid.appendChild(cell);
+            }
+
+            for (let day = 1; day <= totalDays; day++) {
+                const date = new Date(y, m, day);
+                const dow = date.getDay();
+
+                const cell = document.createElement("div");
+                cell.className = "cal-cell";
+
+                if (dow === 0) cell.classList.add("is-sun");
+                if (dow === 6) cell.classList.add("is-sat");
+
+                const top = document.createElement("div");
+                top.className = "cal-top";
+
+                const num = document.createElement("div");
+                num.className = "cal-num";
+                num.textContent = day;
+
+                const hol = holidayLabel(date);
+                const holEl = document.createElement("div");
+                holEl.className = "cal-hol";
+                holEl.textContent = hol;
+
+                top.appendChild(num);
+                top.appendChild(holEl);
+
+                const badge = document.createElement("div");
+                badge.className = "cal-badge";
+
+                const yyyyMMdd = `${y}-${pad(m + 1)}-${pad(day)}`;
+
+                if (isClosed(date)) {
+                    badge.classList.add("is-closed");
+                    badge.textContent = "예약종료";
+                    if (hol) cell.classList.add("is-holiday");
+                } else {
+                    badge.classList.add("is-open");
+                    badge.textContent = "예약가능";
+                    cell.classList.add("is-clickable");
+
+                    // ✅ 날짜 클릭 → 예약신청 모달 즉시 오픈
+                    cell.addEventListener("click", () => {
+                        selectedDate = yyyyMMdd;
+                        selectedTime = null;
+                        openReserveModal();
+                    });
+                }
+
+                cell.appendChild(top);
+                cell.appendChild(badge);
+                grid.appendChild(cell);
+            }
+
+            // 마지막 줄 채우기
+            const cells = grid.children.length;
+            const remainder = cells % 7;
+            if (remainder !== 0) {
+                for (let i = 0; i < 7 - remainder; i++) {
+                    const cell = document.createElement("div");
+                    cell.className = "cal-cell is-empty";
+                    grid.appendChild(cell);
+                }
+            }
+        }
+
+        prev.addEventListener("click", async () => {
+            const oldY = cur.getFullYear();
+            cur = new Date(cur.getFullYear(), cur.getMonth() - 1, 1);
+            if (cur.getFullYear() !== oldY) await loadHolidays(cur.getFullYear());
+            render();
+        });
+
+        next.addEventListener("click", async () => {
+            const oldY = cur.getFullYear();
+            cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
+            if (cur.getFullYear() !== oldY) await loadHolidays(cur.getFullYear());
+            render();
+        });
+
+        (async () => {
+            await loadHolidays(cur.getFullYear());
+            render();
+        })();
+
+    })();
+</script>
+
+{% endblock %}

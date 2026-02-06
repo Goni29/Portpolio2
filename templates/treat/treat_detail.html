@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}{{ SITE_NAME }} | {{ t.title }}{% endblock %}
+
+{% block content %}
+
+<!-- PROCESS (OVERLAP) -->
+<section class="sec treat-process-overlap">
+  <div class="container">
+
+    <div class="treat-block-head">
+      <div class="treat-block-kicker">{{ t.process_kicker }}</div>
+      <h3 class="treat-h3">{{ t.process_title }}</h3>
+      <p class="treat-sub">{{ t.process_sub }}</p>
+    </div>
+
+    <!-- ✅ 배경 이미지 + 카드 오버랩 -->
+    <div class="treat-overlap-stage">
+      <div class="treat-overlap-bg">
+        <img src="{{ url_for('static', filename=t.process_img) }}" alt="{{ t.title }} 프로세스 배경 이미지">
+      </div>
+
+      <div class="treat-overlap-card">
+        <div class="treat-overlap-card-title">{{ t.process_card_title }}</div>
+
+        <div class="treat-grid treat-grid--overlap">
+          {% for c in t.cards %}
+          <div class="treat-card treat-card--overlap">
+            <div class="treat-card-top">
+              <div class="treat-card-idx">{{ c.idx }}</div>
+              <div class="treat-card-title">{{ c.title }}</div>
+            </div>
+            <div class="treat-card-desc">{{ c.desc }}</div>
+          </div>
+          {% endfor %}
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</section>
+
+{% endblock %}

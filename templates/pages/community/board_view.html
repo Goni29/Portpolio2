@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{{ SITE_NAME }} | {{ page_title }}{% endblock %}
+
+{% block content %}
+<section class="sec consult-view-wrap community-view">
+    <div class="container">
+        <div class="board-inner consult-panel">
+
+            <div class="consult-head">
+                <div class="consult-head-top">
+                    <h2 class="consult-title">{{ post["title"] }}</h2>
+                </div>
+
+                <div class="consult-meta">
+                    <span>등록일: {{ (post["created_at"] or "")[:10] }}</span>
+                </div>
+            </div>
+
+            {% if post.get("image_url") %}
+            <div class="post-hero">
+                <img src="{{ post.get('image_url') }}" alt="" />
+            </div>
+            {% endif %}
+
+            <div class="consult-body">
+                {{ (post["content"] or "") | replace('\n', '<br>') | safe }}
+            </div>
+
+            <div class="consult-actions">
+                <a class="btn btn-ghost" href="javascript:history.back()" role="button">목록</a>
+
+                {% if IS_ADMIN %}
+                {# 현재 상세가 notice인지 news인지 ACTIVE_SLUG로 판단 #}
+                {% set _board = 'news' if (ACTIVE_SLUG == 'community/news') else 'notice' %}
+
+                <a class="btn btn-dark" href="/pages/community/{{ _board }}/write" role="button">
+                    <span aria-hidden="true">📝</span> 새 글쓰기
+                </a>
+
+                <form method="post" action="/pages/community/{{ _board }}/{{ post['id'] }}/delete"
+                    style="display:inline;">
+                    <button class="btn btn-ghost" type="submit" onclick="return confirm('정말 삭제할까요?');">
+                        삭제
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+</section>
+{% endblock %}

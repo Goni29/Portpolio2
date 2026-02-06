@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}{{ SITE_NAME }} | 온라인상담{% endblock %}
+
+{% block content %}
+<section class="sec consult-board-wrap">
+  <div class="container">
+
+    <div class="board-inner">
+
+      <div class="board-topbar">
+        <a class="board-rss" href="#" aria-label="RSS">RSS</a>
+
+        <form class="board-search" method="get" action="/pages/reserve/consult">
+          <select name="sort" class="board-select" aria-label="정렬">
+            <option value="latest" {% if sort == 'latest' %}selected{% endif %}>최신순</option>
+            <option value="oldest" {% if sort == 'oldest' %}selected{% endif %}>오래된순</option>
+          </select>
+
+          <input name="q" value="{{ q or '' }}" class="board-input" placeholder="제목/내용/작성자 검색" />
+          <button class="board-search-btn" type="submit" aria-label="검색">🔍</button>
+        </form>
+
+        <a class="board-write-btn" href="/pages/reserve/consult/write">상담신청</a>
+      </div>
+
+      <div class="board-table-wrap">
+        <table class="board-table">
+          <thead>
+            <tr>
+              <th class="col-no">No</th>
+              <th class="col-title">제목</th>
+              <th class="col-writer">작성자</th>
+              <th class="col-date">등록일</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if not posts or posts|length == 0 %}
+            <tr>
+              <td colspan="4" class="board-empty">등록된 상담이 없습니다.</td>
+            </tr>
+            {% endif %}
+
+            {% for p in posts %}
+            <tr>
+              <td class="col-no">{{ p["id"] }}</td>
+
+              <td class="col-title">
+                {% if p["is_private"] %}
+                  <span class="lock">🔒</span>
+                {% endif %}
+
+                <a class="board-link" href="/pages/reserve/consult/{{ p['id'] }}">
+                  {{ p["title"] }}
+                </a>
+
+                {% if p["status"] %}
+                  <span class="badge">{{ p["status"] }}</span>
+                {% endif %}
+              </td>
+
+              <td class="col-writer">{{ (p["name"] or "")|mask_name }}</td>
+              <td class="col-date">{{ (p["created_at"] or "")[:10] }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="board-pagination">
+        {% if pagination and pagination["pages"] > 1 %}
+          {% if pagination["has_prev"] %}
+            <a class="pg" href="/pages/reserve/consult?page={{ pagination['prev_num'] }}&q={{ q or '' }}&sort={{ sort or 'latest' }}">이전</a>
+          {% else %}
+            <span class="pg is-disabled">이전</span>
+          {% endif %}
+
+          {% for pno in range(1, pagination["pages"] + 1) %}
+            {% if pno == pagination["page"] %}
+              <span class="pg is-active">{{ pno }}</span>
+            {% else %}
+              <a class="pg" href="/pages/reserve/consult?page={{ pno }}&q={{ q or '' }}&sort={{ sort or 'latest' }}">{{ pno }}</a>
+            {% endif %}
+          {% endfor %}
+
+          {% if pagination["has_next"] %}
+            <a class="pg" href="/pages/reserve/consult?page={{ pagination['next_num'] }}&q={{ q or '' }}&sort={{ sort or 'latest' }}">다음</a>
+          {% else %}
+            <span class="pg is-disabled">다음</span>
+          {% endif %}
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+</section>
+{% endblock %}

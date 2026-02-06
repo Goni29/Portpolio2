@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}{{ SITE_NAME }} | 병원소식 글쓰기{% endblock %}
+
+{% block content %}
+<section class="sec consult-write-wrap community-write">
+  <div class="container">
+    <div class="board-inner consult-panel">
+
+      <div class="consult-head compact">
+        <h2 class="consult-title">{{ page_title }} 글쓰기</h2>
+        <p class="consult-sub">대표 이미지를 넣으면 목록에 썸네일로 표시됩니다. (선택)</p>
+      </div>
+
+      <form class="consult-form" method="post">
+        <label class="field">
+          <span>제목 *</span>
+          <input name="title" placeholder="제목을 입력하세요" required maxlength="120" />
+        </label>
+
+        <label class="field">
+          <span>대표 이미지(선택)</span>
+          <input name="image_url" placeholder="예) /static/img/news/01.jpg 또는 https://..." />
+        </label>
+
+        <label class="field">
+          <span>내용 *</span>
+          <textarea name="content" placeholder="내용을 입력하세요" required minlength="5"></textarea>
+        </label>
+
+        <div class="consult-actions">
+          <a class="btn btn-ghost" href="/pages/community/news" role="button">목록</a>
+          <button class="btn btn-dark" type="submit">
+            <span aria-hidden="true">📝</span> 등록
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,16 @@
+{
+  "seq": 1,
+  "items": [
+    {
+      "id": 1,
+      "title": "ㅁㄴㅇ",
+      "content": "ㅁㄴㅇㅁㅁㄴㅇ",
+      "name": "ㅁㄴㅇ",
+      "phone": "ㅁㄴㅇ",
+      "is_private": true,
+      "post_password": null,
+      "status": "대기",
+      "created_at": "2026-02-06 07:23:25"
+    }
+  ]
+}

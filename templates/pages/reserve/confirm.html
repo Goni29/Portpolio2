@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}{{ SITE_NAME }} | 예약확인{% endblock %}
+
+{% block content %}
+
+<section class="sec reserve-confirm">
+  <div class="container">
+
+    <div class="confirm-head">
+      <div class="confirm-kicker">RESERVE · CONFIRM</div>
+      <h2 class="confirm-title">예약정보 확인</h2>
+      <p class="confirm-sub">선택하신 날짜/시간을 확인하고, 연락처를 남겨주세요.</p>
+      <div class="confirm-rule" aria-hidden="true"></div>
+    </div>
+
+    <div class="confirm-grid">
+
+      <div class="confirm-block">
+        <div class="cb-title">선택 정보</div>
+
+        <div class="cb-row">
+          <div class="cb-k">날짜</div>
+          <div class="cb-v" id="cfDate">-</div>
+        </div>
+
+        <div class="cb-row">
+          <div class="cb-k">시간</div>
+          <div class="cb-v" id="cfTime">-</div>
+        </div>
+
+        <div class="cb-note">※ 데모 화면입니다. 실제 저장/결제/알림 연동은 서버에서 처리하면 됩니다.</div>
+      </div>
+
+      <div class="confirm-block">
+        <div class="cb-title">연락처</div>
+
+        <form class="confirm-form" method="post" action="#">
+          <div class="cf-row">
+            <label class="cf-label" for="cfName">이름</label>
+            <input class="cf-input" id="cfName" name="name" placeholder="홍길동" />
+          </div>
+
+          <div class="cf-row">
+            <label class="cf-label" for="cfPhone">연락처</label>
+            <input class="cf-input" id="cfPhone" name="phone" placeholder="010-0000-0000" />
+          </div>
+
+          <div class="cf-row">
+            <label class="cf-label" for="cfMemo">메모</label>
+            <textarea class="cf-input cf-textarea" id="cfMemo" name="memo" placeholder="요청사항이 있으면 남겨주세요."></textarea>
+          </div>
+
+          <div class="cf-actions">
+            <a class="btn btn-outline-secondary" href="{{ url_for('page', slug='reserve/calendar') }}">다시 선택</a>
+            <button class="btn btn-dark" type="button" onclick="alert('데모: 예약이 접수되었습니다!')">예약 접수</button>
+          </div>
+        </form>
+      </div>
+
+    </div>
+
+  </div>
+</section>
+
+<script>
+(function(){
+  const params = new URLSearchParams(window.location.search);
+  const date = params.get("date");
+  const time = params.get("time");
+
+  const cfDate = document.getElementById("cfDate");
+  const cfTime = document.getElementById("cfTime");
+
+  function fmtDateKorean(yyyyMMdd){
+    if(!yyyyMMdd) return "-";
+    const parts = yyyyMMdd.split("-");
+    if(parts.length !== 3) return yyyyMMdd;
+    const y = parts[0];
+    const m = parts[1];
+    const d = parts[2];
+    return `${y}년 ${m}월 ${d}일`;
+  }
+
+  if(cfDate) cfDate.textContent = date ? fmtDateKorean(date) : "선택되지 않음";
+  if(cfTime) cfTime.textContent = time ? time : "선택되지 않음";
+})();
+</script>
+
+{% endblock %}

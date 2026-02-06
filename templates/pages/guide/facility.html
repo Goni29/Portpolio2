@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}{{ SITE_NAME }} | 시설안내{% endblock %}
+
+{% block content %}
+
+<section class="sec facility-page">
+  <div class="container">
+
+    <div class="page-head-center">
+      <div class="page-kicker">GUIDE · FACILITY</div>
+      <h2 class="page-title">시설안내</h2>
+      <p class="page-sub">편안한 동선과 위생 중심의 진료 환경을 제공합니다.</p>
+    </div>
+
+    <!-- ✅ 시설 슬라이드(가운데 1장, 3장 순환) -->
+    <div id="facilityCarousel" class="carousel slide facility-carousel" data-bs-ride="carousel" data-bs-interval="4500">
+      <div class="carousel-indicators">
+        <button type="button" data-bs-target="#facilityCarousel" data-bs-slide-to="0" class="active" aria-current="true"
+          aria-label="Slide 1"></button>
+        <button type="button" data-bs-target="#facilityCarousel" data-bs-slide-to="1" aria-label="Slide 2"></button>
+        <button type="button" data-bs-target="#facilityCarousel" data-bs-slide-to="2" aria-label="Slide 3"></button>
+      </div>
+
+      <div class="carousel-inner">
+
+        <div class="carousel-item active">
+          <div class="facility-slide">
+            <img src="{{ url_for('static', filename='img/facility1.png') }}" alt="시설 이미지 1">
+            <div class="facility-cap">
+              <div class="facility-cap-title">접수/대기 공간</div>
+              <div class="facility-cap-sub">편안한 대기와 안내 동선</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="carousel-item">
+          <div class="facility-slide">
+            <img src="{{ url_for('static', filename='img/facility2.png') }}" alt="시설 이미지 2">
+            <div class="facility-cap">
+              <div class="facility-cap-title">상담실</div>
+              <div class="facility-cap-sub">프라이빗 상담 환경</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="carousel-item">
+          <div class="facility-slide">
+            <img src="{{ url_for('static', filename='img/facility3.png') }}" alt="시설 이미지 3">
+            <div class="facility-cap">
+              <div class="facility-cap-title">진료실</div>
+              <div class="facility-cap-sub">위생 중심 진료 시스템</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <button class="carousel-control-prev" type="button" data-bs-target="#facilityCarousel" data-bs-slide="prev"
+        aria-label="이전">
+        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+      </button>
+
+      <button class="carousel-control-next" type="button" data-bs-target="#facilityCarousel" data-bs-slide="next"
+        aria-label="다음">
+        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+      </button>
+    </div>
+
+    <!-- CTA -->
+    <div class="subpage-cta subpage-cta--center">
+      <div class="cta-copy cta-copy--center">
+        <div class="cta-copy-title">시설을 직접 보고 상담받아보세요.</div>
+        <div class="cta-copy-sub">예약 후 방문하시면 더 빠르게 안내해드립니다.</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+{% endblock %}

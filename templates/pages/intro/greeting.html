@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}{{ SITE_NAME }} | 병원 인사말{% endblock %}
+
+{% block content %}
+
+<!-- TOP VISUAL -->
+<section class="greet-hero fullbleed reveal">
+  <div class="greet-hero-img"
+       style="background-image:url('{{ url_for('static', filename='img/clinic.png') }}')">
+  </div>
+</section>
+
+<!-- CONTENT CARD -->
+<section class="greet-card-wrap sec reveal">
+  <div class="container">
+    <div class="greet-card">
+
+      <div class="greet-head">
+        <div class="page-kicker">INTRO · GREETING</div>
+        <h1 class="page-title">병원 인사말</h1>
+        <p class="page-sub">정확한 진단과 정직한 설명으로 신뢰를 드립니다.</p>
+      </div>
+
+      <div class="greet-steps">
+
+        <!-- STEP 01 -->
+        <div class="greet-step reveal">
+          <div class="greet-ico">
+            <!-- 아이콘은 SVG로 간단하게(원하면 이미지로 교체 가능) -->
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" aria-hidden="true">
+              <path d="M12 21s-7-4.4-7-10a4 4 0 0 1 7-2 4 4 0 0 1 7 2c0 5.6-7 10-7 10Z"
+                    stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M12 9v5M9.5 11.5h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+          </div>
+
+          <div class="greet-textbox">
+            <div class="greet-step-kicker">STEP 01</div>
+            <div class="greet-step-title">과잉진료 없는 정직한 진료</div>
+            <div class="greet-step-desc">
+              꼭 필요한 치료만 제안하고, 과정과 비용을 투명하게 안내합니다.
+            </div>
+          </div>
+        </div>
+
+        <div class="greet-divider"></div>
+
+        <!-- STEP 02 -->
+        <div class="greet-step reveal">
+          <div class="greet-ico">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" aria-hidden="true">
+              <path d="M12 2s7 6 7 13a7 7 0 0 1-14 0C5 8 12 2 12 2Z"
+                    stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M12 11v4M10 13h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+          </div>
+
+          <div class="greet-textbox">
+            <div class="greet-step-kicker">STEP 02</div>
+            <div class="greet-step-title">안전한 진료 환경</div>
+            <div class="greet-step-desc">
+              철저한 위생 관리와 체계적인 동선으로 안전한 진료를 제공합니다.
+            </div>
+          </div>
+        </div>
+
+        <div class="greet-divider"></div>
+
+        <!-- STEP 03 -->
+        <div class="greet-step reveal">
+          <div class="greet-ico">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" aria-hidden="true">
+              <path d="M6 20v-1a6 6 0 0 1 12 0v1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"
+                    stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M9.8 8h4.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+          </div>
+
+          <div class="greet-textbox">
+            <div class="greet-step-kicker">STEP 03</div>
+            <div class="greet-step-title">진심 있는 소통</div>
+            <div class="greet-step-desc">
+              환자분이 이해하고 선택할 수 있도록 쉽고 친절하게 설명합니다.
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</section>
+
+{% endblock %}

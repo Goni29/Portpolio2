@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}{{ SITE_NAME }} | 병원소식{% endblock %}
+
+{% block content %}
+<section class="sec consult-board-wrap community-board">
+    <div class="container">
+        <div class="board-inner">
+
+            <div class="board-topbar">
+                <div class="board-left">
+                    <div class="board-title">{{ page_title }}</div>
+                </div>
+
+                <div class="board-mid">
+                    <form class="board-search" method="get" action="/pages/community/news">
+                        <select name="sort" class="board-select" aria-label="정렬">
+                            <option value="latest" {% if sort=='latest' %}selected{% endif %}>최신순</option>
+                            <option value="oldest" {% if sort=='oldest' %}selected{% endif %}>오래된순</option>
+                        </select>
+
+                        <input name="q" value="{{ q or '' }}" class="board-input" placeholder="제목/내용 검색" />
+                        <button class="board-search-btn" type="submit" aria-label="검색">🔍</button>
+                    </form>
+                </div>
+
+                <div class="board-right">
+                    {% if IS_ADMIN %}
+                    <a class="btn btn-dark" href="/pages/community/news/write" role="button">
+                        <span aria-hidden="true">📝</span> 글쓰기
+                    </a>
+                    {% endif %}
+                </div>
+
+            </div>
+
+            <div class="board-table-wrap">
+                <table class="board-table">
+                    <thead>
+                        <tr>
+                            <th class="col-thumb"></th>
+                            <th class="col-title">제목</th>
+                            <th class="col-date">등록일</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if not posts or posts|length == 0 %}
+                        <tr>
+                            <td colspan="3" class="board-empty">등록된 병원소식이 없습니다.</td>
+                        </tr>
+                        {% endif %}
+
+                        {% for p in posts %}
+                        <tr>
+                            <td class="col-thumb">
+                                {% if p.get("image_url") %}
+                                <img class="thumb" src="{{ p.get('image_url') }}" alt="" />
+                                {% else %}
+                                <div class="thumb thumb--empty"></div>
+                                {% endif %}
+                            </td>
+                            <td class="col-title">
+                                <a class="board-link" href="/pages/community/news/{{ p['id'] }}">{{ p["title"] }}</a>
+                            </td>
+                            <td class="col-date">{{ (p["created_at"] or "")[:10] }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="board-pagination">
+                {% if pagination and pagination["pages"] > 1 %}
+                {% if pagination["has_prev"] %}
+                <a class="pg"
+                    href="/pages/community/news?page={{ pagination['prev_num'] }}&q={{ q or '' }}&sort={{ sort or 'latest' }}">이전</a>
+                {% else %}
+                <span class="pg is-disabled">이전</span>
+                {% endif %}
+
+                {% for pno in range(1, pagination["pages"] + 1) %}
+                {% if pno == pagination["page"] %}
+                <span class="pg is-active">{{ pno }}</span>
+                {% else %}
+                <a class="pg" href="/pages/community/news?page={{ pno }}&q={{ q or '' }}&sort={{ sort or 'latest' }}">{{
+                    pno }}</a>
+                {% endif %}
+                {% endfor %}
+
+                {% if pagination["has_next"] %}
+                <a class="pg"
+                    href="/pages/community/news?page={{ pagination['next_num'] }}&q={{ q or '' }}&sort={{ sort or 'latest' }}">다음</a>
+                {% else %}
+                <span class="pg is-disabled">다음</span>
+                {% endif %}
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+</section>
+{% endblock %}

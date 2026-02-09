@@ -91,6 +91,7 @@ body {
   margin: 0;
   padding: 0;
   overflow-x: hidden;
+  overscroll-behavior-y: none;
 }
 
 /* Avoid layout shift when Bootstrap toggles modal (scrollbar compensation) */
@@ -1477,8 +1478,13 @@ body.page-sub .navbar .navbar-brand {
     grid-template-columns: 120px 1fr;
   }
 
+  .staff-photo {
+    background: transparent;
+  }
+
   .staff-photo img {
-    height: 150px;
+    height: 100%;
+    min-height: 150px;
   }
 
   .staff-detail {

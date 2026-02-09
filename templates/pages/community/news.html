@@ -53,7 +53,7 @@
                         <tr>
                             <td class="col-thumb">
                                 {% if p.get("image_url") %}
-                                <img class="thumb" src="{{ p.get('image_url') }}" alt="" />
+                                <img class="thumb" src="{{ p.get('image_url') }}" alt="" / loading="lazy" decoding="async">
                                 {% else %}
                                 <div class="thumb thumb--empty"></div>
                                 {% endif %}

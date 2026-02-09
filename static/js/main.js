@@ -215,6 +215,8 @@ function initTreat2() {
   // Mobile: one-card-per-swipe
   let touchStartX = 0;
   let touchStartY = 0;
+  let touchStartScroll = 0;
+  let touchIntent = null;
   let touchStartKey = null;
   let touchStartT = 0;
 
@@ -233,10 +235,35 @@ function initTreat2() {
       const t = e.touches[0];
       touchStartX = t.clientX;
       touchStartY = t.clientY;
+      touchStartScroll = viewport.scrollLeft;
+      touchIntent = null;
       touchStartKey = getCenterKey() || getActiveKey();
       touchStartT = performance.now();
     },
     { passive: true }
+  );
+
+  viewport.addEventListener(
+    "touchmove",
+    (e) => {
+      if (!isMobileLayout()) return;
+      if (e.touches.length !== 1) return;
+      const t = e.touches[0];
+      const dx = t.clientX - touchStartX;
+      const dy = t.clientY - touchStartY;
+      const absX = Math.abs(dx);
+      const absY = Math.abs(dy);
+
+      if (!touchIntent && (absX > 6 || absY > 6)) {
+        touchIntent = absX > absY * 1.1 ? "x" : "y";
+      }
+
+      if (touchIntent === "x") {
+        e.preventDefault();
+        viewport.scrollLeft = touchStartScroll - dx;
+      }
+    },
+    { passive: false }
   );
 
   viewport.addEventListener(
@@ -245,6 +272,7 @@ function initTreat2() {
       if (!isMobileLayout()) return;
       const t = e.changedTouches[0];
       if (!t) return;
+      touchIntent = null;
       const dx = t.clientX - touchStartX;
       const dy = t.clientY - touchStartY;
       const absX = Math.abs(dx);
@@ -253,8 +281,8 @@ function initTreat2() {
       const v = absX / dt;
 
       const isHorizontal = absX > absY * 1.1;
-      const isSwipe = absX >= 24 && isHorizontal;
-      const isFlick = dt <= 180 && v >= 0.35 && absX >= 10 && isHorizontal;
+      const isSwipe = absX >= 14 && isHorizontal;
+      const isFlick = dt <= 220 && v >= 0.22 && absX >= 8 && isHorizontal;
       if (!isSwipe && !isFlick) return;
 
       const baseKey = touchStartKey || getCenterKey() || getActiveKey();
@@ -268,6 +296,16 @@ function initTreat2() {
         return;
       }
       animateSwitch(cards[targetIdx].dataset.key);
+      touchIntent = null;
+    },
+    { passive: true }
+  );
+
+  viewport.addEventListener(
+    "touchcancel",
+    () => {
+      if (!isMobileLayout()) return;
+      touchIntent = null;
     },
     { passive: true }
   );

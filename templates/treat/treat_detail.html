@@ -16,7 +16,7 @@
     <!-- ✅ 배경 이미지 + 카드 오버랩 -->
     <div class="treat-overlap-stage">
       <div class="treat-overlap-bg">
-        <img src="{{ url_for('static', filename=t.process_img) }}" alt="{{ t.title }} 프로세스 배경 이미지">
+        <img src="{{ url_for('static', filename=t.process_img) }}" alt="{{ t.title }} 프로세스 배경 이미지" loading="lazy" decoding="async">
       </div>
 
       <div class="treat-overlap-card">

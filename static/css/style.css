@@ -4483,8 +4483,10 @@ body.page-home header.sticky-top:not(.mega-open) .navbar.navbar-transparent:not(
 
     #topNav {
       position: absolute !important;
-      left: 0 !important;
-      right: 0 !important;
+      left: 50% !important;
+      right: auto !important;
+      width: 100vw;
+      margin-left: -50vw;
       top: 100% !important;
 
       background: rgba(255, 255, 255, .99) !important;
@@ -5653,42 +5655,131 @@ body.page-home header.sticky-top:not(.mega-open) .navbar.navbar-transparent:not(
    + 파란/회색 박스 안에 딱 중앙정렬
    ========================================================= */
   @media (max-width: 991.98px) {
-
-    .cal-badge {
+    .reserve-cal .cal-badge {
       display: flex;
-      /* ✅ 2줄 정렬 위해 flex */
       flex-direction: column;
-      /* ✅ 세로로 쌓기 */
       align-items: center;
       justify-content: center;
-
-      /* 박스 크기(원하는 느낌으로 조절 가능) */
+      height: auto;
       min-height: 32px;
       padding: 4px 6px;
-
       border-radius: 0;
-      /* 기존 네 디자인이 각진 박스면 유지 */
       line-height: 1.05;
       font-weight: 800;
       font-size: 12px;
+      white-space: normal;
+      text-align: center;
+    }
 
-      .cal-badge {
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: center;
-        justify-content: center;
-
-        white-space: normal !important;
-        /* 혹시 nowrap 걸려있으면 해제 */
-        line-height: 1.05;
-        text-align: center;
-      }
-
-      .cal-badge-line {
-        display: block;
-      }
-
-      /* '예약가능'처럼 4글자면 보통 [예약][가능]으로 떨어짐.
-     혹시 단어가 1줄로 유지되면 max-width를 38px로 더 줄이면 됨. */
+    .reserve-cal .cal-badge-line {
+      display: block;
+      white-space: normal;
     }
   }
+
+  /* =========================================================
+   Community Board - narrow screens: keep search controls inside
+   ========================================================= */
+  @media (max-width: 420px) {
+    .community-board .board-search {
+      flex-wrap: wrap;
+      justify-content: flex-start;
+      gap: 6px;
+    }
+
+    .community-board .board-select {
+      flex: 1 1 100%;
+      width: 100%;
+      max-width: 100%;
+    }
+
+    .community-board .board-input {
+      flex: 1 1 auto;
+      width: auto;
+      min-width: 0;
+    }
+
+    .community-board .board-search-btn {
+      flex: 0 0 36px;
+      height: 30px;
+    }
+
+    .consult-board-wrap .board-search {
+      flex-wrap: wrap;
+      justify-content: flex-start;
+      gap: 6px;
+      max-width: 100%;
+    }
+
+    .consult-board-wrap .board-select {
+      flex: 1 1 100%;
+      width: 100% !important;
+      max-width: 100%;
+    }
+
+    .consult-board-wrap .board-input {
+      flex: 1 1 auto;
+      width: auto !important;
+      min-width: 0;
+    }
+
+    .consult-board-wrap .board-search-btn {
+      flex: 0 0 36px;
+      height: 30px !important;
+    }
+  }
+
+  /* =========================================================
+   Reserve Calendar - extra narrow screens
+   ========================================================= */
+  @media (max-width: 360px) {
+    .reserve-cal .cal-month-wrap {
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px 10px;
+    }
+
+    .reserve-cal .cal-month {
+      font-size: 16px;
+    }
+
+    .reserve-cal .cal-nav {
+      width: 30px;
+      height: 30px;
+      font-size: 18px;
+    }
+
+    .reserve-cal .cal-dow {
+      padding: 7px 2px;
+      font-size: 10.5px;
+    }
+
+    .reserve-cal .cal-cell {
+      min-height: 66px;
+      padding: 6px 5px 7px;
+    }
+
+    .reserve-cal .cal-top {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 3px;
+      margin-bottom: 6px;
+    }
+
+    .reserve-cal .cal-num {
+      font-size: 12px;
+    }
+
+    .reserve-cal .cal-hol {
+      font-size: 10px;
+      white-space: normal;
+      line-height: 1.1;
+    }
+
+    .reserve-cal .cal-badge {
+      min-height: 26px;
+      padding: 2px 4px;
+      font-size: 10.5px;
+    }
+  }
+

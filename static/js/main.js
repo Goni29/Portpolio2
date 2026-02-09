@@ -47,6 +47,36 @@ function initTreat2() {
     cards.forEach((c) => c.classList.toggle("is-active", c.dataset.key === key));
   };
 
+  const mobileMQ = window.matchMedia("(max-width: 991.98px)");
+  const isMobileLayout = () => mobileMQ.matches;
+
+  const getCenterKey = () => {
+    const center = viewport.scrollLeft + viewport.clientWidth / 2;
+    let best = null;
+    let bestDist = Infinity;
+
+    cards.forEach((c) => {
+      const cCenter = c.offsetLeft + c.offsetWidth / 2;
+      const dist = Math.abs(center - cCenter);
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = c;
+      }
+    });
+
+    return best?.dataset.key || null;
+  };
+
+  const syncActiveFromScroll = () => {
+    const key = getCenterKey();
+    if (!key) return;
+    const activeKey =
+      tabWrap.querySelector(".treat2-tab.is-active")?.dataset.key ||
+      rail.querySelector(".treat2-card.is-active")?.dataset.key;
+    if (activeKey === key) return;
+    setActive(key);
+  };
+
   const alignActive = (behavior = "smooth") => {
     const active = rail.querySelector(".treat2-card.is-active");
     if (!active) return;
@@ -74,6 +104,8 @@ function initTreat2() {
   };
 
   let isAnimating = false;
+  let scrollRaf = null;
+  let scrollEndTimer = null;
 
   const animateSwitch = (key) => {
     if (isAnimating) return;
@@ -120,8 +152,36 @@ function initTreat2() {
   setActive(initKey);
   requestAnimationFrame(() => alignActive("auto"));
 
-  const onResize = window.__PH.rafThrottle(() => alignActive("auto"));
+  const onResize = window.__PH.rafThrottle(() => {
+    if (isMobileLayout()) {
+      syncActiveFromScroll();
+    }
+    alignActive("auto");
+  });
   window.addEventListener("resize", onResize, { passive: true });
+
+  const scheduleScrollEnd = () => {
+    if (scrollEndTimer) clearTimeout(scrollEndTimer);
+    scrollEndTimer = setTimeout(() => {
+      scrollEndTimer = null;
+      if (!isMobileLayout()) return;
+      if (isAnimating) return;
+      syncActiveFromScroll();
+    }, 120);
+  };
+
+  const onScroll = () => {
+    if (!isMobileLayout()) return;
+    if (scrollRaf) return;
+    scrollRaf = requestAnimationFrame(() => {
+      scrollRaf = null;
+      if (isAnimating) return;
+      syncActiveFromScroll();
+      scheduleScrollEnd();
+    });
+  };
+
+  viewport.addEventListener("scroll", onScroll, { passive: true });
 
   // Drag-to-scroll
   let isDown = false;
@@ -239,6 +299,8 @@ function initDoctorSlider() {
   if (isMobile) {
     const realSlides = slides.slice();
     const realByKey = new Map(realSlides.map((s) => [s.dataset.key, s]));
+    const realIndexByKey = new Map(realSlides.map((s, i) => [s.dataset.key, i]));
+    const len = realSlides.length;
     let allSlides = realSlides.slice();
     let headClones = [];
     let tailClones = [];
@@ -246,6 +308,17 @@ function initDoctorSlider() {
     let scrollEndTimer = null;
     let timerId = null;
     let paused = false;
+    let suppressClickUntil = 0;
+    let virtualIndex = index;
+    let animToken = 0;
+    let animating = false;
+    const SLIDE_MS = 200;
+    const SNAP_TYPE = "x mandatory";
+    const setSnap = (on) => {
+      viewport.style.scrollSnapType = on ? SNAP_TYPE : "none";
+    };
+    const getSwipeMin = () =>
+      Math.max(12, Math.min(28, Math.round(viewport.clientWidth * 0.045)));
 
     const setActiveByKey = (key) => {
       allSlides.forEach((s) => {
@@ -257,9 +330,11 @@ function initDoctorSlider() {
     };
 
     const setIndexByKey = (key) => {
-      const next = realSlides.findIndex((s) => s.dataset.key === key);
-      if (next >= 0) index = next;
+      const next = realIndexByKey.get(key);
+      if (typeof next === "number") index = next;
     };
+
+    const normalizeIndex = (v) => ((v % len) + len) % len;
 
     const scrollToSlide = (slide, behavior = "smooth") => {
       if (!slide) return;
@@ -272,9 +347,50 @@ function initDoctorSlider() {
       target = clamp(target, 0, max);
 
       if (behavior === "auto") {
+        animToken += 1;
+        animating = false;
+        if (scrollEndTimer) {
+          clearTimeout(scrollEndTimer);
+          scrollEndTimer = null;
+        }
         viewport.scrollLeft = target;
+        setSnap(true);
+        rebaseToReal();
       } else {
-        viewport.scrollTo({ left: target, behavior });
+        if (scrollEndTimer) {
+          clearTimeout(scrollEndTimer);
+          scrollEndTimer = null;
+        }
+        setSnap(false);
+        const start = viewport.scrollLeft;
+        const delta = target - start;
+        if (Math.abs(delta) < 0.5 || SLIDE_MS <= 0) {
+          viewport.scrollLeft = target;
+          return;
+        }
+
+        const token = ++animToken;
+        animating = true;
+        const t0 = performance.now();
+
+        const easeInOut = (t) =>
+          t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+
+        const step = (now) => {
+          if (token !== animToken) return;
+          const p = Math.min(1, (now - t0) / SLIDE_MS);
+          const eased = easeInOut(p);
+          viewport.scrollLeft = start + delta * eased;
+          if (p < 1) {
+            requestAnimationFrame(step);
+          } else {
+            animating = false;
+            setSnap(true);
+            rebaseToReal();
+          }
+        };
+
+        requestAnimationFrame(step);
       }
     };
 
@@ -292,9 +408,11 @@ function initDoctorSlider() {
       const head = [];
       const tail = [];
 
-      realSlides.forEach((s) => {
+      realSlides.forEach((s, i) => {
         const clone = s.cloneNode(true);
         clone.dataset.cloneFor = s.dataset.key || "";
+        clone.dataset.clonePos = "head";
+        clone.dataset.cloneIndex = String(i);
         clone.classList.remove("is-active");
         clone.setAttribute("aria-hidden", "true");
         clone.tabIndex = -1;
@@ -302,9 +420,11 @@ function initDoctorSlider() {
         headFrag.appendChild(clone);
       });
 
-      realSlides.forEach((s) => {
+      realSlides.forEach((s, i) => {
         const clone = s.cloneNode(true);
         clone.dataset.cloneFor = s.dataset.key || "";
+        clone.dataset.clonePos = "tail";
+        clone.dataset.cloneIndex = String(i);
         clone.classList.remove("is-active");
         clone.setAttribute("aria-hidden", "true");
         clone.tabIndex = -1;
@@ -320,25 +440,16 @@ function initDoctorSlider() {
       allSlides = Array.from(track.querySelectorAll(".doctor3-slide"));
     };
 
-    const jumpToReal = (key) => {
-      const target = realByKey.get(key);
-      if (!target) return;
-      viewport.classList.add("no-scale-anim");
-      scrollToSlide(target, "auto");
-      requestAnimationFrame(() => viewport.classList.remove("no-scale-anim"));
-    };
-
     const setActive = (nextIndex, behavior = "smooth") => {
-      const len = realSlides.length;
-      const raw = nextIndex;
-      index = (raw + len) % len;
+      virtualIndex = nextIndex;
+      index = normalizeIndex(virtualIndex);
 
       const key = realSlides[index].dataset.key;
       setActiveByKey(key);
 
       let target = realSlides[index];
-      if (raw >= len && tailClones.length) target = tailClones[index];
-      if (raw < 0 && headClones.length) target = headClones[index];
+      if (virtualIndex >= len && tailClones.length) target = tailClones[index];
+      if (virtualIndex < 0 && headClones.length) target = headClones[index];
 
       scrollToSlide(target, behavior);
     };
@@ -356,7 +467,7 @@ function initDoctorSlider() {
       if (timerId) return;
       timerId = setTimeout(() => {
         timerId = null;
-        setActive(index + 1, "smooth");
+        setActive(virtualIndex + 1, "smooth");
         scheduleNext();
       }, 5000);
     };
@@ -375,13 +486,266 @@ function initDoctorSlider() {
       scheduleNext();
     };
 
+    const markSuppressClick = () => {
+      suppressClickUntil = Date.now() + 240;
+    };
+
     realSlides.forEach((s, i) => {
       s.addEventListener("click", (e) => {
+        if (Date.now() < suppressClickUntil) return;
         e.preventDefault();
         setActive(i, "smooth");
         restart();
       });
     });
+
+    const INTENT_MIN = 2;
+    const SWIPE_AXIS = 0.6;
+    let swipeActive = false;
+    let swipeStartX = 0;
+    let swipeStartY = 0;
+    let swipeStartT = 0;
+    let swipeIntent = null;
+    let swipeStartScroll = 0;
+    let swipeBaseIndex = 0;
+    let swipeMaxX = 0;
+    let swipeMaxY = 0;
+    let swipeLastX = 0;
+    let swipeLastT = 0;
+    let swipePeakV = 0;
+    let swipeMaxDx = 0;
+    let swipeMinDx = 0;
+    let swipePeakVX = 0;
+    const rebaseToReal = () => {
+      const center = viewport.scrollLeft + viewport.clientWidth / 2;
+      let best = null;
+      let bestDist = Infinity;
+
+      allSlides.forEach((s) => {
+        const slideCenter = s.offsetLeft + s.offsetWidth / 2;
+        const dist = Math.abs(center - slideCenter);
+        if (dist < bestDist) {
+          bestDist = dist;
+          best = s;
+        }
+      });
+
+      if (!best || !best.dataset.cloneFor) return;
+      const key = best.dataset.cloneFor || best.dataset.key;
+      const real = realByKey.get(key);
+      if (!real) return;
+
+      const delta = best.offsetLeft - real.offsetLeft;
+      if (Math.abs(delta) < 1) return;
+
+      viewport.classList.add("no-scale-anim");
+      setSnap(false);
+      const prevBehavior = viewport.style.scrollBehavior;
+      viewport.style.scrollBehavior = "auto";
+      viewport.scrollLeft -= delta;
+      viewport.style.scrollBehavior = prevBehavior || "";
+      setSnap(true);
+      requestAnimationFrame(() => viewport.classList.remove("no-scale-anim"));
+
+      const realIdx = realIndexByKey.get(key);
+      if (typeof realIdx === "number") {
+        virtualIndex = realIdx;
+        index = normalizeIndex(virtualIndex);
+      }
+    };
+
+    const getBaseVirtualFromView = () => {
+      const center = viewport.scrollLeft + viewport.clientWidth / 2;
+      let best = null;
+      let bestDist = Infinity;
+
+      allSlides.forEach((s) => {
+        const slideCenter = s.offsetLeft + s.offsetWidth / 2;
+        const dist = Math.abs(center - slideCenter);
+        if (dist < bestDist) {
+          bestDist = dist;
+          best = s;
+        }
+      });
+
+      if (!best) return virtualIndex;
+      const key = best.dataset.cloneFor || best.dataset.key;
+      const realIdx = realIndexByKey.get(key);
+      if (typeof realIdx !== "number") return virtualIndex;
+
+      if (best.dataset.cloneFor) {
+        return best.dataset.clonePos === "head" ? realIdx - len : realIdx + len;
+      }
+      return realIdx;
+    };
+
+    const onSwipeStart = (x, y) => {
+      swipeActive = true;
+      swipeIntent = null;
+      swipeStartX = x;
+      swipeStartY = y;
+      swipeStartT = performance.now();
+      rebaseToReal();
+      swipeStartScroll = viewport.scrollLeft;
+      swipeBaseIndex = getBaseVirtualFromView();
+      virtualIndex = swipeBaseIndex;
+      index = normalizeIndex(virtualIndex);
+      setActiveByKey(realSlides[index].dataset.key);
+      swipeMaxX = 0;
+      swipeMaxY = 0;
+      swipeLastX = x;
+      swipeLastT = swipeStartT;
+      swipePeakV = 0;
+      swipeMaxDx = 0;
+      swipeMinDx = 0;
+      swipePeakVX = 0;
+      stop();
+      animToken += 1;
+      animating = false;
+      if (scrollEndTimer) {
+        clearTimeout(scrollEndTimer);
+        scrollEndTimer = null;
+      }
+      setSnap(false);
+    };
+
+    const onSwipeMove = (x, y, e) => {
+      if (!swipeActive) return;
+      const dx = x - swipeStartX;
+      const dy = y - swipeStartY;
+      const absX = Math.abs(dx);
+      const absY = Math.abs(dy);
+      swipeMaxX = Math.max(swipeMaxX, absX);
+      swipeMaxY = Math.max(swipeMaxY, absY);
+      const now = performance.now();
+      const dtMove = Math.max(1, now - swipeLastT);
+      const v = Math.abs(x - swipeLastX) / dtMove;
+      if (v > swipePeakV) swipePeakV = v;
+      const vx = (x - swipeLastX) / dtMove;
+      if (Math.abs(vx) > Math.abs(swipePeakVX)) swipePeakVX = vx;
+      swipeLastX = x;
+      swipeLastT = now;
+      swipeMaxDx = Math.max(swipeMaxDx, dx);
+      swipeMinDx = Math.min(swipeMinDx, dx);
+      if (!swipeIntent) {
+        if (absX < INTENT_MIN && absY < INTENT_MIN) return;
+        swipeIntent = absX >= absY * SWIPE_AXIS ? "x" : "y";
+      }
+      if (swipeIntent === "x") {
+        viewport.scrollLeft = swipeStartScroll - dx;
+        e?.preventDefault?.();
+      }
+    };
+
+    const onSwipeEnd = (x, y) => {
+      if (!swipeActive) return;
+      swipeActive = false;
+
+      const dx = x - swipeStartX;
+      const dy = y - swipeStartY;
+      const absX = Math.abs(dx);
+      const absY = Math.abs(dy);
+      const SWIPE_MIN = getSwipeMin();
+      const dt = Math.max(1, performance.now() - swipeStartT);
+      const velocity = Math.max(absX, swipeMaxX) / dt;
+      const isHorizontal =
+        swipeIntent === "x" ||
+        swipeMaxX >= swipeMaxY * 0.4 ||
+        absX >= absY * 0.4;
+      const minMove = swipeMaxX >= 3 || absX >= 3;
+      const enoughDistance = swipeMaxX >= SWIPE_MIN || absX >= SWIPE_MIN;
+      const fastSwipe = swipePeakV >= 0.22 || velocity >= 0.25;
+      const shortFlick = dt <= 160 && (swipeMaxX >= 4 || absX >= 4);
+      const horizIntent = swipeIntent === "x" && (swipeMaxX >= 2 || absX >= 2);
+      let dirDx = dx;
+      const maxAbsDx = Math.abs(swipeMaxDx) >= Math.abs(swipeMinDx) ? swipeMaxDx : swipeMinDx;
+      if (Math.abs(maxAbsDx) >= 6) dirDx = maxAbsDx;
+      else if (Math.abs(swipePeakVX) > 0.25) dirDx = swipePeakVX;
+      else if (Math.abs(maxAbsDx) >= 2) dirDx = maxAbsDx;
+
+      if ((horizIntent) || (isHorizontal && minMove && (enoughDistance || fastSwipe || shortFlick))) {
+        markSuppressClick();
+        setActive(swipeBaseIndex + (dirDx < 0 ? 1 : -1), "smooth");
+        restart();
+        return;
+      }
+
+      setActive(swipeBaseIndex, "smooth");
+      restart();
+    };
+
+    const onSwipeCancel = () => {
+      if (!swipeActive) return;
+      swipeActive = false;
+      setSnap(true);
+      restart();
+    };
+
+    if ("PointerEvent" in window) {
+      viewport.addEventListener("pointerdown", (e) => {
+        if (e.pointerType !== "mouse") return;
+        if (e.button !== 0) return;
+        onSwipeStart(e.clientX, e.clientY);
+      });
+
+      viewport.addEventListener(
+        "pointermove",
+        (e) => {
+          if (!swipeActive) return;
+          if (e.pointerType !== "mouse") return;
+          onSwipeMove(e.clientX, e.clientY, e);
+        },
+        { passive: false }
+      );
+
+      viewport.addEventListener("pointerup", (e) => {
+        if (e.pointerType !== "mouse") return;
+        onSwipeEnd(e.clientX, e.clientY);
+      });
+
+      viewport.addEventListener("pointercancel", (e) => {
+        if (e.pointerType !== "mouse") return;
+        onSwipeCancel();
+      });
+    }
+
+    viewport.addEventListener(
+      "touchstart",
+      (e) => {
+        if (e.touches.length !== 1) return;
+        const t = e.touches[0];
+        onSwipeStart(t.clientX, t.clientY);
+      },
+      { passive: true }
+    );
+
+    viewport.addEventListener(
+      "touchmove",
+      (e) => {
+        if (!swipeActive) return;
+        if (e.touches.length !== 1) return;
+        const t = e.touches[0];
+        onSwipeMove(t.clientX, t.clientY, e);
+      },
+      { passive: false }
+    );
+
+    viewport.addEventListener(
+      "touchend",
+      (e) => {
+        const t = e.changedTouches[0];
+        if (!t) {
+          onSwipeCancel();
+          return;
+        }
+        onSwipeEnd(t.clientX, t.clientY);
+      },
+      { passive: true }
+    );
+
+    viewport.addEventListener("touchcancel", () => {
+      onSwipeCancel();
+    }, { passive: true });
 
     const getCenterSlide = () => {
       const center = viewport.scrollLeft + viewport.clientWidth / 2;
@@ -407,9 +771,21 @@ function initDoctorSlider() {
         const best = getCenterSlide();
         if (!best) return;
         const key = best.dataset.cloneFor || best.dataset.key;
+        if (!key) return;
         setActiveByKey(key);
         setIndexByKey(key);
-        if (best.dataset.cloneFor) jumpToReal(key);
+
+        const realIdx = realIndexByKey.get(key);
+        if (typeof realIdx === "number") {
+          if (best.dataset.cloneFor) {
+            virtualIndex =
+              best.dataset.clonePos === "head" ? realIdx - len : realIdx + len;
+          } else {
+            virtualIndex = realIdx;
+          }
+        }
+
+        rebaseToReal();
         restart();
       }, 120);
     };
@@ -418,13 +794,27 @@ function initDoctorSlider() {
       if (scrollRaf) return;
       scrollRaf = requestAnimationFrame(() => {
         scrollRaf = null;
+        if (animating) return;
         const best = getCenterSlide();
-        if (!best) return;
-        const key = best.dataset.cloneFor || best.dataset.key;
-        if (!key) return;
-        setActiveByKey(key);
-        setIndexByKey(key);
-        scheduleScrollEnd();
+        if (best) {
+          const key = best.dataset.cloneFor || best.dataset.key;
+          if (key) {
+            setActiveByKey(key);
+            if (!swipeActive) {
+              setIndexByKey(key);
+              const realIdx = realIndexByKey.get(key);
+              if (typeof realIdx === "number") {
+                if (best.dataset.cloneFor) {
+                  virtualIndex =
+                    best.dataset.clonePos === "head" ? realIdx - len : realIdx + len;
+                } else {
+                  virtualIndex = realIdx;
+                }
+              }
+            }
+          }
+        }
+        if (!swipeActive) scheduleScrollEnd();
       });
     };
 
@@ -437,10 +827,14 @@ function initDoctorSlider() {
 
     const onResize = window.__PH.rafThrottle(() => {
       scrollToSlide(realSlides[index], "auto");
+      viewport.style.touchAction = "pan-y";
+      setSnap(true);
     });
     window.addEventListener("resize", onResize, { passive: true });
 
     ensureClones();
+    viewport.style.touchAction = "pan-y";
+    setSnap(true);
     setActiveByKey(realSlides[index].dataset.key);
     scrollToSlide(realSlides[index], "auto");
     start();

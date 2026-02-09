@@ -270,7 +270,7 @@ PAGE_META = {
 
 # =========================
 
-DEFAULT_HERO = "img/subhero.png"
+DEFAULT_HERO = "img/hero_sub.webp"
 
 SECTION_HERO = {k: DEFAULT_HERO for k in ["intro", "treat", "guide", "reserve", "community"]}
 
@@ -326,7 +326,7 @@ def inject_globals():
 
     section = slug.split("/", 1)[0] if slug else ""
 
-    hero_img = SECTION_HERO.get(section, "img/subhero_intro.jpg")
+    hero_img = SECTION_HERO.get(section, DEFAULT_HERO)
 
 
 
@@ -723,7 +723,7 @@ TREAT_PAGES = {
 
         "title": "치아교정",
 
-        "process_img": "img/treat1.png",
+        "process_img": "img/treat1.webp",
 
         "process_card_title": "치아교정 진행과정",
 
@@ -775,7 +775,7 @@ TREAT_PAGES = {
 
         "lead": "정확한 진단과 안전한 식립 계획으로 기능과 심미를 함께 회복합니다.",
 
-        "process_img": "img/treat2.png",
+        "process_img": "img/treat2.webp",
 
         "process_card_title": "임플란트 진행과정",
 
@@ -827,7 +827,7 @@ TREAT_PAGES = {
 
         "lead": "염증을 제거하고 내부를 깨끗이 소독해 치아 기능을 유지하도록 돕습니다.",
 
-        "process_img": "img/treat3.png",
+        "process_img": "img/treat3.webp",
 
         "process_card_title": "신경치료 진행과정",
 
@@ -879,7 +879,7 @@ TREAT_PAGES = {
 
         "lead": "초기에는 간단한 치료로 끝날 수 있어 조기 진단이 중요합니다.",
 
-        "process_img": "img/treat4.png",
+        "process_img": "img/treat4.webp",
 
         "process_card_title": "충치치료 진행과정",
 
@@ -931,7 +931,7 @@ TREAT_PAGES = {
 
         "lead": "매복/염증 여부를 확인하고 안전한 발치를 우선으로 진행합니다.",
 
-        "process_img": "img/treat5.png",
+        "process_img": "img/treat5.webp",
 
         "process_card_title": "사랑니 발치 진행과정",
 

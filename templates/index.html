@@ -9,7 +9,7 @@
     <div class="carousel-inner">
 
       <div class="carousel-item active">
-        <div class="hero-slide" style="background-image:url('{{ url_for('static', filename='img/hero1.png') }}')">
+        <div class="hero-slide" style="background-image:url('{{ url_for('static', filename='img/hero1.webp') }}')">
           <div class="hero-overlay"></div>
           <div class="hero-content">
             <div class="hero-badge">PORTFOLIO HOSPITAL</div>
@@ -24,7 +24,7 @@
       </div>
 
       <div class="carousel-item">
-        <div class="hero-slide" style="background-image:url('{{ url_for('static', filename='img/hero2.png') }}')">
+        <div class="hero-slide" style="background-image:url('{{ url_for('static', filename='img/hero2.webp') }}')">
           <div class="hero-overlay"></div>
           <div class="hero-content">
             <div class="hero-badge">DENTAL CARE</div>
@@ -85,7 +85,7 @@
       <div class="treat2-rail" id="treatRail">
 
         <button class="treat2-card is-active" data-key="ortho" type="button">
-          <div class="t2-bg" style="background-image:url('{{ url_for('static', filename='img/treat1.png') }}')"></div>
+          <div class="t2-bg" style="background-image:url('{{ url_for('static', filename='img/treat1.webp') }}')"></div>
           <div class="t2-dim"></div>
           <div class="t2-content">
             <div class="t2-title">치아교정</div>
@@ -97,7 +97,7 @@
         </button>
 
         <button class="treat2-card" data-key="implant" type="button">
-          <div class="t2-bg" style="background-image:url('{{ url_for('static', filename='img/treat2.png') }}')"></div>
+          <div class="t2-bg" style="background-image:url('{{ url_for('static', filename='img/treat2.webp') }}')"></div>
           <div class="t2-dim"></div>
           <div class="t2-content">
             <div class="t2-title">임플란트</div>
@@ -109,7 +109,7 @@
         </button>
 
         <button class="treat2-card" data-key="neuro" type="button">
-          <div class="t2-bg" style="background-image:url('{{ url_for('static', filename='img/treat3.png') }}')"></div>
+          <div class="t2-bg" style="background-image:url('{{ url_for('static', filename='img/treat3.webp') }}')"></div>
           <div class="t2-dim"></div>
           <div class="t2-content">
             <div class="t2-title">신경치료</div>
@@ -121,7 +121,7 @@
         </button>
 
         <button class="treat2-card" data-key="endo" type="button">
-          <div class="t2-bg" style="background-image:url('{{ url_for('static', filename='img/treat4.png') }}')"></div>
+          <div class="t2-bg" style="background-image:url('{{ url_for('static', filename='img/treat4.webp') }}')"></div>
           <div class="t2-dim"></div>
           <div class="t2-content">
             <div class="t2-title">충치치료</div>
@@ -133,7 +133,7 @@
         </button>
 
         <button class="treat2-card" data-key="wisdom" type="button">
-          <div class="t2-bg" style="background-image:url('{{ url_for('static', filename='img/treat5.png') }}')"></div>
+          <div class="t2-bg" style="background-image:url('{{ url_for('static', filename='img/treat5.webp') }}')"></div>
           <div class="t2-dim"></div>
           <div class="t2-content">
             <div class="t2-title">사랑니발치</div>
@@ -184,11 +184,11 @@
           <span class="doctor3-spacer" aria-hidden="true"></span>
 
           <button class="doctor3-slide is-active" type="button" data-key="doc1" aria-label="김포트 원장">
-            <img src="{{ url_for('static', filename='img/doctor1.png') }}" alt="대표원장 김포트">
+            <img src="{{ url_for('static', filename='img/doctor1.webp') }}" alt="대표원장 김포트">
           </button>
 
           <button class="doctor3-slide" type="button" data-key="doc2" aria-label="김의사 원장">
-            <img src="{{ url_for('static', filename='img/doctor2.png') }}" alt="원장 김의사">
+            <img src="{{ url_for('static', filename='img/doctor2.webp') }}" alt="원장 김의사">
           </button>
 
           <span class="doctor3-spacer" aria-hidden="true"></span>
@@ -217,19 +217,19 @@
       <div class="row g-3">
         <div class="col-12 col-md-4">
           <div class="fac-img">
-            <img src="{{ url_for('static', filename='img/facility1.png') }}" alt="시설 사진 1">
+            <img src="{{ url_for('static', filename='img/facility1.webp') }}" alt="시설 사진 1">
           </div>
         </div>
 
         <div class="col-12 col-md-4">
           <div class="fac-img">
-            <img src="{{ url_for('static', filename='img/facility2.png') }}" alt="시설 사진 2">
+            <img src="{{ url_for('static', filename='img/facility2.webp') }}" alt="시설 사진 2">
           </div>
         </div>
 
         <div class="col-12 col-md-4">
           <div class="fac-img">
-            <img src="{{ url_for('static', filename='img/facility3.png') }}" alt="시설 사진 3">
+            <img src="{{ url_for('static', filename='img/facility3.webp') }}" alt="시설 사진 3">
           </div>
         </div>
       </div>
@@ -294,7 +294,7 @@
               <div class="col-12 col-md-auto d-flex">
                 <a class="news-card" href="/pages/community/news/{{ p['id'] }}">
                   <div class="news-thumb"
-                    style="background-image:url('{{ p.get('image_url') or url_for('static', filename='img/news1.png') }}')"></div>
+                    style="background-image:url('{{ p.get('image_url') or url_for('static', filename='img/news1.webp') }}')"></div>
                   <div class="news-body">
                     <div class="news-title">{{ p["title"] }}</div>
                     <div class="news-date">{{ (p["created_at"] or "")[:10] | replace("-", ".") }}</div>

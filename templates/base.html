@@ -129,7 +129,7 @@
     {# ✅ 서브페이지 공통 상단창 (레퍼런스 스타일) #}
     {% if request.path != '/' and meta and not (HIDE_SUBHERO | default(false)) %}
     <section class="sub-hero fullbleed {% if not HERO_IMG %}no-bg{% endif %}">
-      <div class="sub-hero-bg" style="background-image:url('{{ url_for('static', filename='img/hero_sub.png') }}');">
+      <div class="sub-hero-bg" style="background-image:url('{{ url_for('static', filename='img/hero_sub.webp') }}');">
       </div>
       <div class="sub-hero-dim"></div>
 

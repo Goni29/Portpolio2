@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block title %}{{ SITE_NAME }} | 회원가입{% endblock %}
 
 {% block content %}
@@ -8,29 +8,35 @@
 
       <div class="consult-head compact">
         <h2 class="consult-title">회원가입</h2>
-        <p class="consult-sub">포트폴리오 데모 화면입니다. 실제 가입은 동작하지 않습니다.</p>
+        <p class="consult-sub">이 가입은 현재 브라우저 세션에만 저장되며 브라우저를 닫으면 사라집니다.</p>
       </div>
 
-      <form class="consult-form" method="post">
+      <form class="consult-form" method="post" id="signupForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
         <div class="consult-grid">
           <label class="field">
             <span>이름</span>
-            <input name="name" placeholder="홍길동" />
+            <input name="name" placeholder="홍길동" value="{{ form.name }}" class="{% if errors.name %}input-error{% endif %}" />
+            <div class="form-error" data-error-for="name">{{ errors.get('name', '') }}</div>
           </label>
           <label class="field">
             <span>이메일</span>
-            <input name="email" placeholder="example@email.com" />
+            <input name="email" placeholder="example@email.com" value="{{ form.email }}" class="{% if errors.email %}input-error{% endif %}" />
+            <div class="form-error" data-error-for="email">{{ errors.get('email', '') }}</div>
           </label>
         </div>
 
         <div class="consult-grid">
           <label class="field">
             <span>비밀번호</span>
-            <input name="password" type="password" placeholder="비밀번호" />
+            <input name="password" type="password" placeholder="비밀번호" class="{% if errors.password %}input-error{% endif %}" />
+            <div class="form-error" data-error-for="password">{{ errors.get('password', '') }}</div>
           </label>
           <label class="field">
             <span>비밀번호 확인</span>
-            <input name="password2" type="password" placeholder="비밀번호 확인" />
+            <input name="password2" type="password" placeholder="비밀번호 확인" class="{% if errors.password2 %}input-error{% endif %}" />
+            <div class="form-error" data-error-for="password2">{{ errors.get('password2', '') }}</div>
           </label>
         </div>
 
@@ -43,4 +49,108 @@
     </div>
   </div>
 </section>
+
+{% if success_message or failure_message %}
+<div class="modal fade" id="signupResultModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content signup-modal">
+      <div class="modal-header">
+        <h5 class="modal-title">{{ "가입 완료" if success_message else "가입 실패" }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+      </div>
+      <div class="modal-body">
+        {{ success_message or failure_message }}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-dark" data-bs-dismiss="modal">확인</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var form = document.getElementById("signupForm");
+    if (!form) return;
+
+    var emailInput = form.querySelector('input[name="email"]');
+    var pwInput = form.querySelector('input[name="password"]');
+    var pw2Input = form.querySelector('input[name="password2"]');
+    var emailRe = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+    var existingEmails = {{ existing_emails | default([]) | tojson }};
+
+    function setError(name, msg) {
+      var el = form.querySelector('[data-error-for="' + name + '"]');
+      if (!el) return;
+      el.textContent = msg || "";
+      var input = form.querySelector('[name="' + name + '"]');
+      if (input) {
+        if (msg) {
+          input.classList.add("input-error");
+        } else {
+          input.classList.remove("input-error");
+        }
+      }
+    }
+
+    function validateEmail() {
+      if (!emailInput) return;
+      var v = (emailInput.value || "").trim();
+      if (!v) {
+        setError("email", "");
+        return;
+      }
+      if (!emailRe.test(v)) {
+        setError("email", "이메일 형식이 올바르지 않습니다.");
+      } else if (existingEmails.indexOf(v.toLowerCase()) !== -1) {
+        setError("email", "이미 가입된 이메일입니다. (세션 내 저장)");
+      } else {
+        setError("email", "");
+      }
+    }
+
+    function validatePasswordLength() {
+      if (!pwInput) return;
+      var p = pwInput.value || "";
+      if (!p) {
+        setError("password", "");
+        return;
+      }
+      if (p.length < 4) {
+        setError("password", "비밀번호는 4자 이상 입력해주세요.");
+      } else {
+        setError("password", "");
+      }
+    }
+
+    function validatePasswordMatch() {
+      if (!pwInput || !pw2Input) return;
+      var p = pwInput.value || "";
+      var p2 = pw2Input.value || "";
+      if (!p2) {
+        setError("password2", "");
+        return;
+      }
+      if (p !== p2) {
+        setError("password2", "비밀번호가 일치하지 않습니다.");
+      } else {
+        setError("password2", "");
+      }
+    }
+
+    if (emailInput) emailInput.addEventListener("blur", validateEmail);
+    if (pwInput) pwInput.addEventListener("blur", function () {
+      validatePasswordLength();
+      validatePasswordMatch();
+    });
+    if (pw2Input) pw2Input.addEventListener("blur", validatePasswordMatch);
+
+    var modalEl = document.getElementById("signupResultModal");
+    if (modalEl && window.bootstrap && bootstrap.Modal) {
+      var modal = new bootstrap.Modal(modalEl);
+      modal.show();
+    }
+  });
+</script>
 {% endblock %}

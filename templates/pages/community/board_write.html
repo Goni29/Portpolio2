@@ -12,6 +12,8 @@
       </div>
 
       <form class="consult-form" method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
         <label class="field">
           <span>제목 *</span>
           <input name="title" placeholder="제목을 입력하세요" required maxlength="120" />

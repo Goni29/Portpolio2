@@ -13,11 +13,13 @@
             </div>
 
             <form class="consult-form" method="post" action="/pages/reserve/consult/write" id="consultWriteForm">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
 
                 <div class="consult-grid">
                     <label class="field">
                         <span>이름 *</span>
-                        <input name="name" placeholder="홍길동" required />
+                        <input name="name" placeholder="홍길동" required  value="{{ DEMO_USER.name if DEMO_USER else "" }}" />
                     </label>
 
                     <label class="field">

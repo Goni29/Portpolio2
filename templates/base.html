@@ -17,27 +17,68 @@
       <div class="container">
         <a class="navbar-brand fw-bold" href="/">{{ SITE_NAME }}</a>
 
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topNav">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topNav"
+          aria-controls="topNav" aria-expanded="false" aria-label="Toggle navigation">
           <span class="navbar-toggler-icon"></span>
         </button>
 
         <div class="collapse navbar-collapse" id="topNav">
 
-          <!-- ✅ 상단 메뉴 -->
+          <!-- ✅ 상단 메뉴 (PC/모바일 공용: UL은 그대로 유지) -->
           <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-2 nav-mega">
             {% for menu in NAV %}
             <li class="nav-item nav-mega-item">
-              <a class="nav-link fw-semibold nav-mega-link" href="#" data-mega-key="{{ loop.index0 }}">
+
+              <!-- PC: 기존 mega 트리거 유지 / Mobile: panel 내용 스왑 트리거로도 사용 -->
+              <a class="nav-link fw-semibold nav-mega-link" href="#" data-mega-key="{{ loop.index0 }}"
+                data-mobile-acc-btn="1">
                 {{ menu["title"] }}
               </a>
+
+              <!-- ✅ MOBILE: 하위 메뉴 "소스" (숨김, panel에 복사해서 사용) -->
+              <div class="d-lg-none mobile-mega-src" data-mega-src="{{ loop.index0 }}" hidden>
+                {% for item in menu["items"] %}
+                <a class="mobile-mega-link" href="{{ url_for('page', slug=item['slug']) }}">
+                  {{ item['label'] }}
+                </a>
+                {% endfor %}
+              </div>
+
             </li>
             {% endfor %}
 
             <li class="nav-item ms-lg-2">
-              <a class="btn btn-primary btn-sm px-3" href="{{ url_for('page', slug='reserve/calendar') }}">예약하기</a>
+              <!-- ✅ 예약하기 (모바일에서 텍스트 메뉴처럼 스타일링) -->
+              <a class="btn btn-primary btn-sm px-3 nav-reserve" href="{{ url_for('page', slug='reserve/calendar') }}">
+                예약하기
+              </a>
+            </li>
+
+            <!-- ✅ 모바일 전용 로그인/회원가입: 왼쪽 하단 sticky 고정 -->
+            <li class="nav-item d-lg-none mt-3 pt-3 border-top mobile-auth">
+              {% if IS_ADMIN or DEMO_USER %}
+              <a class="d-block py-2" href="{{ url_for('logout') }}">로그아웃</a>
+              {% else %}
+              <a class="d-block py-2" href="{{ url_for('login', next=request.full_path) }}">로그인</a>
+              <a class="d-block py-2" href="{{ url_for('signup') }}">회원가입</a>
+              {% endif %}
             </li>
           </ul>
 
+          <!-- ✅ MOBILE: 가운데 20% 영역(여백/가이드) -->
+          <div class="d-lg-none mnav-divider" aria-hidden="true"></div>
+
+          <!-- ✅ MOBILE: 오른쪽 40% "고정 메가 패널(1개)" -->
+          <div class="d-lg-none mnav-panel" id="mobileMegaPanel" aria-hidden="true">
+            <div class="mnav-panel-inner">
+              <div class="mnav-panel-head" id="mnavPanelHead">메뉴를 선택하세요</div>
+              <div class="mnav-panel-body" id="mnavPanelBody">
+                <div class="mnav-panel-placeholder">왼쪽에서 상위 메뉴를 누르면 하위 메뉴가 표시됩니다.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ✅ PC 메가 메뉴 (기존 유지) -->
           <div class="mega-global d-none d-lg-block" aria-hidden="true">
             <div class="mega-global-inner">
               <div class="container mega-rail">
@@ -55,12 +96,13 @@
             </div>
           </div>
 
-        </div>
-      </div> <!-- collapse navbar-collapse 끝 -->
+        </div><!-- /.collapse -->
 
-      <!-- ✅ 여기 추가! (container 안, collapse 밖) -->
+      </div><!-- /.container -->
+
+      <!-- ✅ PC 전용 로그인/회원가입 (기존 유지) -->
       <div class="nav-auth-dock d-none d-lg-flex">
-        {% if IS_ADMIN %}
+        {% if IS_ADMIN or DEMO_USER %}
         <a class="nav-auth-link" href="{{ url_for('logout') }}">로그아웃</a>
         {% else %}
         <a class="nav-auth-link" href="{{ url_for('login', next=request.full_path) }}">로그인</a>
@@ -68,22 +110,22 @@
         {% endif %}
       </div>
 
-      </div>
     </nav>
-
-    </div>
-    </nav>
-
-
-    <div class="d-lg-none border-top">
-      <div class="container py-2 d-flex gap-2">
-        <a class="btn btn-outline-primary w-50" href="{{ url_for('page', slug='reserve/calendar') }}">달력예약</a>
-        <a class="btn btn-outline-secondary w-50" href="{{ url_for('page', slug='reserve/consult') }}">온라인상담</a>
-      </div>
-    </div>
   </header>
 
+
   <main>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="container mt-3">
+      {% for category, message in messages %}
+      <div class="alert alert-{{ category }} mb-2" role="alert">
+        {{ message }}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
     {# ✅ 서브페이지 공통 상단창 (레퍼런스 스타일) #}
     {% if request.path != '/' and meta and not (HIDE_SUBHERO | default(false)) %}
     <section class="sub-hero fullbleed {% if not HERO_IMG %}no-bg{% endif %}">
@@ -103,10 +145,11 @@
                   d="M12 3.2 3 10.5v10.3h6.3v-6.4h5.4v6.4H21V10.5L12 3.2Zm7.2 15.8h-2.7v-6.4H7.5v6.4H4.8v-7.6L12 5.9l7.2 5.5v7.6Z" />
               </svg>
             </a>
-
-            <span class="bc-sep">›</span>
-            <span class="bc-item">{{ ACTIVE_MENU["title"] if ACTIVE_MENU else "" }}</span>
-            <span class="bc-sep">›</span>
+            {% if ACTIVE_MENU %}
+            <span class="bc-sep">&rsaquo;</span>
+            <span class="bc-item">{{ ACTIVE_MENU["title"] }}</span>
+            {% endif %}
+            <span class="bc-sep">&rsaquo;</span>
             <span class="bc-item is-current">{{ meta.title }}</span>
           </div>
         </div>
@@ -115,7 +158,9 @@
 
     {# ✅ 서브페이지 탭바(해당 상위메뉴 하위메뉴 자동) #}
     {% if ACTIVE_MENU %}
-    <section class="subnav fullbleed d-none d-lg-block">
+    {% set _subcols = (ACTIVE_MENU['items']|length) if ACTIVE_MENU else 0 %}
+    <section class="subnav fullbleed {% if _subcols and _subcols <= 5 %}subnav-fit{% endif %}"
+      style="--subtab-cols: {{ _subcols }};">
       <div class="full-content">
         <div class="subnav-inner">
           {% for it in ACTIVE_MENU["items"] %}

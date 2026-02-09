@@ -18,8 +18,8 @@
 
         <div class="cal-cta">
             <!-- ✅ 달력예약 페이지 상단에 존재해야 함 -->
-            <button class="btn btn-dark" type="button" id="calConfirmBtn">
-                <span aria-hidden="true">📅</span> 예약확인
+            <button class="btn btn-dark cal-confirm" type="button" id="calConfirmBtn">
+                <span class="cal-confirm-ico" aria-hidden="true">📅</span> <span class="cal-confirm-txt">예약확인</span>
             </button>
         </div>
 
@@ -198,41 +198,52 @@
             </div>
 
             <div class="modal-body rsv-body">
-                <form class="rsv-form" id="checkForm" onsubmit="return false;">
+                <div id="checkFormWrap">
+                    <form class="rsv-form" id="checkForm" onsubmit="return false;">
 
-                    <div class="rsv-grid">
-                        <div class="rsv-row">
-                            <div class="rsv-label">예약자 이름</div>
-                            <div class="rsv-field">
-                                <input class="rsv-input" id="chkName" placeholder="예약자 이름을 입력해 주세요.">
+                        <div class="rsv-grid">
+                            <div class="rsv-row">
+                                <div class="rsv-label">예약자 이름</div>
+                                <div class="rsv-field">
+                                    <input class="rsv-input" id="chkName" placeholder="예약자 이름을 입력해 주세요.">
+                                </div>
+                            </div>
+
+                            <div class="rsv-row">
+                                <div class="rsv-label">휴대폰 번호</div>
+                                <div class="rsv-field">
+                                    <input class="rsv-input" id="chkPhone" placeholder="- 없이 숫자만 입력해 주세요.">
+                                </div>
+                            </div>
+
+                            <div class="rsv-row">
+                                <div class="rsv-label">생년월일</div>
+                                <div class="rsv-field">
+                                    <input class="rsv-input" id="chkBirth" placeholder="생년월일(YYYY-MM-DD)">
+                                </div>
                             </div>
                         </div>
 
-                        <div class="rsv-row">
-                            <div class="rsv-label">휴대폰 번호</div>
-                            <div class="rsv-field">
-                                <input class="rsv-input" id="chkPhone" placeholder="- 없이 숫자만 입력해 주세요.">
-                            </div>
+                        <div class="rsv-actions">
+                            <button class="rsv-submit" type="button" id="chkSubmitBtn">조회하기</button>
                         </div>
 
-                        <div class="rsv-row">
-                            <div class="rsv-label">생년월일</div>
-                            <div class="rsv-field">
-                                <input class="rsv-input" id="chkBirth" placeholder="생년월일(YYYY-MM-DD)">
-                            </div>
-                        </div>
-                    </div>
+                    </form>
+                </div>
 
+                <div class="rsv-result" id="checkResultWrap" hidden>
+                    <div class="rsv-result-list" id="checkResultList"></div>
                     <div class="rsv-actions">
-                        <button class="rsv-submit" type="button" id="chkSubmitBtn">조회하기</button>
+                        <button class="rsv-submit" type="button" id="chkBackBtn">다시 조회</button>
                     </div>
-
-                </form>
+                </div>
             </div>
 
         </div>
     </div>
 </div>
+
+<input type="hidden" id="csrfToken" value="{{ csrf_token }}">
 
 <script>
     (function () {
@@ -241,6 +252,11 @@
         const prev = document.getElementById("calPrev");
         const next = document.getElementById("calNext");
         const confirmBtnTop = document.getElementById("calConfirmBtn"); // ✅ 상단 예약확인(조회)
+        const csrfToken = document.getElementById("csrfToken")?.value || "";
+        const checkFormWrap = document.getElementById("checkFormWrap");
+        const checkResultWrap = document.getElementById("checkResultWrap");
+        const checkResultList = document.getElementById("checkResultList");
+        const chkBackBtn = document.getElementById("chkBackBtn");
 
         if (!monthText || !grid || !prev || !next) return;
 
@@ -285,11 +301,40 @@
             return holidayMap[key] || "";
         }
 
-        // ✅ 예약종료: 일요일 OR 공휴일 (원하면 토/일로 바꿀 수 있음)
+        function normalizePhone(value) {
+            return String(value || "").replace(/\D/g, "");
+        }
+
+        function isPastTimeSlot(dateKey, timeStr) {
+            if (!dateKey || !timeStr) return false;
+            const today = new Date();
+            const todayKey = keyFromDateObj(today);
+            if (dateKey !== todayKey) return false;
+            const parts = timeStr.split(":");
+            if (parts.length !== 2) return false;
+            const h = Number(parts[0]);
+            const m = Number(parts[1]);
+            if (!Number.isFinite(h) || !Number.isFinite(m)) return false;
+            const slotMinutes = (h * 60) + m;
+            const nowMinutes = (today.getHours() * 60) + today.getMinutes();
+            return slotMinutes <= nowMinutes;
+        }
+
+        // ✅ 예약종료: (오늘 이전 날짜) OR 일요일 OR 공휴일
         function isClosed(date) {
             const dow = date.getDay(); // 0=일
             const key = keyFromDateObj(date);
-            return (dow === 0) || holidaySet.has(key);
+
+            // ✅ "오늘 00:00" 기준으로 과거 차단 (시간 오차 방지)
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const d = new Date(date);
+            d.setHours(0, 0, 0, 0);
+
+            const isPast = d < today;
+
+            return isPast || (dow === 0) || holidaySet.has(key);
         }
 
         // ---------------------------
@@ -323,9 +368,17 @@
                     const opt = document.createElement("option");
                     opt.value = t;
                     opt.textContent = t;
+                    if (isPastTimeSlot(selectedDate, t)) {
+                        opt.disabled = true;
+                    }
                     if (selectedTime === t) opt.selected = true;
                     timeSelect.appendChild(opt);
                 });
+
+                if (timeSelect.value && timeSelect.selectedOptions[0]?.disabled) {
+                    timeSelect.value = "";
+                    selectedTime = null;
+                }
 
                 timeSelect.onchange = () => {
                     selectedTime = timeSelect.value || null;
@@ -373,6 +426,7 @@
         // ✅ 상단 "예약확인" 버튼은 "조회 모달"만 열기
         if (confirmBtnTop) {
             confirmBtnTop.addEventListener("click", () => {
+                resetCheckModal();
                 const m = getCheckModal();
                 if (m) m.show();
                 else alert("Bootstrap 모달이 아직 로드되지 않았습니다. (bootstrap.bundle 확인)");
@@ -396,11 +450,14 @@
         // ✅ 예약신청 버튼(예약신청 모달 내부)
         const cfSubmitBtn = document.getElementById("cfSubmitBtn");
         if (cfSubmitBtn) {
-            cfSubmitBtn.addEventListener("click", () => {
+            cfSubmitBtn.addEventListener("click", async () => {
                 const name = (document.getElementById("cfName")?.value || "").trim();
-                const phone = (document.getElementById("cfPhone")?.value || "").trim();
+                const phone = normalizePhone(document.getElementById("cfPhone")?.value || "");
                 const birth = (document.getElementById("cfBirth")?.value || "").trim();
                 const timeVal = (document.getElementById("cfTimeSelect")?.value || "").trim();
+                const gender = document.querySelector('input[name="cfGender"]:checked')?.value || "";
+                const visitType = document.querySelector('input[name="cfVisitType"]:checked')?.value || "";
+                const memo = (document.getElementById("cfMemo")?.value || "").trim();
                 const okTerms = document.getElementById("agreeUse")?.checked;
                 const okPrivacy = document.getElementById("agreePrivacy")?.checked;
 
@@ -411,29 +468,167 @@
                 if (!birth) return alert("생년월일을 입력해주세요.");
                 if (!okTerms || !okPrivacy) return alert("필수 약관에 동의해주세요.");
 
-                alert("데모: 예약이 접수되었습니다!");
+                try {
+                    const res = await fetch("/api/reservations", {
+                        method: "POST",
+                        credentials: "same-origin",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRF-Token": csrfToken
+                        },
+                        body: JSON.stringify({
+                            date: selectedDate,
+                            time: timeVal,
+                            name,
+                            phone,
+                            birth,
+                            gender,
+                            visit_type: visitType,
+                            memo
+                        })
+                    });
 
-                // ✅ 접수 후 초기화 + 닫기
-                resetReserveForm();
-                const m = getReserveModal();
-                if (m) m.hide();
+                    if (!res.ok) {
+                        throw new Error("reserve failed");
+                    }
+
+                    // ✅ 접수 후 초기화 + 닫기
+                    resetReserveForm();
+                    const m = getReserveModal();
+                    if (m) m.hide();
+                } catch (e) {
+                    alert("예약 저장에 실패했습니다. 다시 시도해주세요.");
+                }
             });
         }
 
         // ✅ 조회하기 버튼(예약확인 모달 내부)
         const chkSubmitBtn = document.getElementById("chkSubmitBtn");
         if (chkSubmitBtn) {
-            chkSubmitBtn.addEventListener("click", () => {
+            chkSubmitBtn.addEventListener("click", async () => {
                 const n = (document.getElementById("chkName")?.value || "").trim();
-                const p = (document.getElementById("chkPhone")?.value || "").trim();
+                const p = normalizePhone(document.getElementById("chkPhone")?.value || "");
                 const b = (document.getElementById("chkBirth")?.value || "").trim();
 
                 if (!n) return alert("예약자 이름을 입력해 주세요.");
                 if (!p) return alert("휴대폰 번호를 입력해 주세요.");
                 if (!b) return alert("생년월일을 입력해 주세요.");
 
-                alert("데모: 예약 조회 결과가 표시됩니다. (서버 연동 시 실제 조회)");
-                // 필요하면 여기서 fetch로 서버 조회 연동
+                try {
+                    const res = await fetch("/api/reservations/check", {
+                        method: "POST",
+                        credentials: "same-origin",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRF-Token": csrfToken
+                        },
+                        body: JSON.stringify({
+                            name: n,
+                            phone: p,
+                            birth: b
+                        })
+                    });
+
+                    if (!res.ok) {
+                        throw new Error("check failed");
+                    }
+
+                    const json = await res.json();
+                    const results = Array.isArray(json.results) ? json.results : [];
+                    renderCheckResults(results);
+                } catch (e) {
+                    alert("예약 조회에 실패했습니다. 다시 시도해주세요.");
+                }
+            });
+        }
+
+        function resetCheckModal() {
+            if (checkFormWrap) checkFormWrap.hidden = false;
+            if (checkResultWrap) checkResultWrap.hidden = true;
+            if (checkResultList) checkResultList.innerHTML = "";
+        }
+
+        function makeResultRow(label, value, isTextarea = false) {
+            const row = document.createElement("div");
+            row.className = "rsv-row";
+
+            const labelEl = document.createElement("div");
+            labelEl.className = "rsv-label";
+            labelEl.textContent = label;
+
+            const field = document.createElement("div");
+            field.className = "rsv-field";
+
+            if (isTextarea) {
+                const ta = document.createElement("textarea");
+                ta.className = "rsv-input rsv-textarea";
+                ta.readOnly = true;
+                ta.rows = 3;
+                ta.value = value || "";
+                field.appendChild(ta);
+            } else {
+                const input = document.createElement("input");
+                input.className = "rsv-input";
+                input.readOnly = true;
+                input.value = value || "";
+                field.appendChild(input);
+            }
+
+            row.appendChild(labelEl);
+            row.appendChild(field);
+            return row;
+        }
+
+        function renderCheckResults(results) {
+            if (!checkResultList || !checkResultWrap || !checkFormWrap) return;
+            checkResultList.innerHTML = "";
+
+            if (!results.length) {
+                const empty = document.createElement("div");
+                empty.className = "rsv-result-empty";
+                empty.textContent = "조회된 예약이 없습니다.";
+                checkResultList.appendChild(empty);
+            } else {
+                results.forEach((item) => {
+                    const wrap = document.createElement("div");
+                    wrap.className = "rsv-result-item";
+                    const grid = document.createElement("div");
+                    grid.className = "rsv-grid";
+
+                    grid.appendChild(makeResultRow("예약일", item.date || "-"));
+                    grid.appendChild(makeResultRow("예약시간", item.time || "-"));
+                    grid.appendChild(makeResultRow("예약자", item.name || "-"));
+                    grid.appendChild(makeResultRow("연락처", item.phone || "-"));
+                    grid.appendChild(makeResultRow("생년월일", item.birth || "-"));
+
+                    if (item.gender) {
+                        grid.appendChild(makeResultRow("성별", item.gender));
+                    }
+
+                    if (item.visit_type) {
+                        grid.appendChild(makeResultRow("진료종류", item.visit_type));
+                    }
+
+                    if (item.created_at) {
+                        grid.appendChild(makeResultRow("접수일", item.created_at));
+                    }
+
+                    if (item.memo) {
+                        grid.appendChild(makeResultRow("메모", item.memo, true));
+                    }
+
+                    wrap.appendChild(grid);
+                    checkResultList.appendChild(wrap);
+                });
+            }
+
+            checkFormWrap.hidden = true;
+            checkResultWrap.hidden = false;
+        }
+
+        if (chkBackBtn) {
+            chkBackBtn.addEventListener("click", () => {
+                resetCheckModal();
             });
         }
 
@@ -492,11 +687,11 @@
 
                 if (isClosed(date)) {
                     badge.classList.add("is-closed");
-                    badge.textContent = "예약종료";
+                    badge.innerHTML = '<span class="cal-badge-line">예약종료</span>';
                     if (hol) cell.classList.add("is-holiday");
                 } else {
                     badge.classList.add("is-open");
-                    badge.textContent = "예약가능";
+                    badge.innerHTML = '<span class="cal-badge-line">예약가능</span>';
                     cell.classList.add("is-clickable");
 
                     // ✅ 날짜 클릭 → 예약신청 모달 즉시 오픈

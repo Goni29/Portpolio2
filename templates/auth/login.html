@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block title %}{{ SITE_NAME }} | 로그인{% endblock %}
 
 {% block content %}
@@ -9,14 +9,16 @@
       <div class="consult-head compact">
         <h2 class="consult-title">로그인</h2>
         <p class="consult-sub">
-          포트폴리오 데모 화면입니다. <b>admin 계정만</b> 실제 로그인됩니다.
+          포트폴리오 데모입니다. 회원 로그인은 세션에만 저장되며 관리자 로그인은 로컬에서만 가능합니다.
         </p>
       </div>
 
       <form class="consult-form" method="post" action="{{ url_for('login', next=next) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
         <label class="field">
-          <span>아이디</span>
-          <input name="username" placeholder="(관리자) admin" autocomplete="username" />
+          <span>아이디 / 이메일</span>
+          <input name="username" placeholder="아이디 또는 이메일" autocomplete="username" />
         </label>
 
         <label class="field">
@@ -26,13 +28,39 @@
 
         <div class="consult-actions">
           <a class="btn btn-ghost" href="{{ url_for('signup') }}" role="button">회원가입</a>
-          <button class="btn btn-dark" type="submit">
-            <span aria-hidden="true">🔐</span> 로그인
-          </button>
+          <button class="btn btn-dark" type="submit">로그인</button>
         </div>
       </form>
 
     </div>
   </div>
 </section>
+
+{% if login_failure %}
+<div class="modal fade" id="loginResultModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content signup-modal">
+      <div class="modal-header">
+        <h5 class="modal-title">로그인 실패</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+      </div>
+      <div class="modal-body">
+        {{ login_failure }}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-dark" data-bs-dismiss="modal">확인</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var modalEl = document.getElementById("loginResultModal");
+    if (modalEl && window.bootstrap && bootstrap.Modal) {
+      var modal = new bootstrap.Modal(modalEl);
+      modal.show();
+    }
+  });
+</script>
 {% endblock %}

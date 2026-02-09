@@ -35,6 +35,8 @@
         <div class="cb-title">연락처</div>
 
         <form class="confirm-form" method="post" action="#">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
           <div class="cf-row">
             <label class="cf-label" for="cfName">이름</label>
             <input class="cf-input" id="cfName" name="name" placeholder="홍길동" />

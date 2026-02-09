@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block title %}{{ SITE_NAME }} | 상담 상세{% endblock %}
 
 {% block content %}
@@ -16,8 +16,8 @@
         </div>
 
         <div class="consult-meta">
-          <span>작성자: {{ (post["name"] or "")|mask_name }}</span>
-          <span>등록일: {{ (post["created_at"] or "")[:10] }}</span>
+          <span>작성자 {{ (post["name"] or "")|mask_name }}</span>
+          <span>등록일 {{ (post["created_at"] or "")[:10] }}</span>
         </div>
       </div>
 
@@ -30,6 +30,12 @@
         <a class="btn btn-dark" href="/pages/reserve/consult/write" role="button">
           <span aria-hidden="true">📝</span> 새 상담신청
         </a>
+        {% if IS_ADMIN %}
+        <form method="post" action="/pages/reserve/consult/{{ post['id'] }}/delete" class="d-inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button class="btn btn-outline-danger" type="submit">삭제</button>
+        </form>
+        {% endif %}
       </div>
 
     </div>

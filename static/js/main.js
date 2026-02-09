@@ -1,4 +1,4 @@
-/* =========================================================
+﻿/* =========================================================
    Portfolio Hospital - MAIN.JS (정리본)
    - 기존 동작 유지(롤백 정상 상태 기준)
    - 기능별 init 분리 + 중복 DOMContentLoaded 제거
@@ -229,13 +229,228 @@ function initDoctorSlider() {
   const infos = Array.from(document.querySelectorAll(".doctor3-info"));
   if (slides.length < 2) return;
 
+  const isMobile = window.matchMedia("(max-width: 991.98px)").matches;
+
   let index = slides.findIndex((s) => s.classList.contains("is-active"));
   if (index < 0) index = 0;
 
   const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 
+  if (isMobile) {
+    const realSlides = slides.slice();
+    const realByKey = new Map(realSlides.map((s) => [s.dataset.key, s]));
+    let allSlides = realSlides.slice();
+    let headClones = [];
+    let tailClones = [];
+    let scrollRaf = null;
+    let scrollEndTimer = null;
+    let timerId = null;
+    let paused = false;
+
+    const setActiveByKey = (key) => {
+      allSlides.forEach((s) => {
+        const matchKey = s.dataset.cloneFor || s.dataset.key;
+        s.classList.toggle("is-active", matchKey === key);
+      });
+
+      infos.forEach((info) => info.classList.toggle("is-active", info.dataset.key === key));
+    };
+
+    const setIndexByKey = (key) => {
+      const next = realSlides.findIndex((s) => s.dataset.key === key);
+      if (next >= 0) index = next;
+    };
+
+    const scrollToSlide = (slide, behavior = "smooth") => {
+      if (!slide) return;
+      const vw = viewport.clientWidth;
+      const max = viewport.scrollWidth - vw;
+      if (max <= 0) return;
+
+      const center = slide.offsetLeft + slide.offsetWidth / 2;
+      let target = center - vw / 2;
+      target = clamp(target, 0, max);
+
+      if (behavior === "auto") {
+        viewport.scrollLeft = target;
+      } else {
+        viewport.scrollTo({ left: target, behavior });
+      }
+    };
+
+    const ensureClones = () => {
+      if (track.querySelector(".doctor3-slide[data-clone-for]")) {
+        allSlides = Array.from(track.querySelectorAll(".doctor3-slide"));
+        return;
+      }
+
+      const firstReal = realSlides[0];
+      const endSpacer = track.querySelector(".doctor3-spacer:last-of-type");
+
+      const headFrag = document.createDocumentFragment();
+      const tailFrag = document.createDocumentFragment();
+      const head = [];
+      const tail = [];
+
+      realSlides.forEach((s) => {
+        const clone = s.cloneNode(true);
+        clone.dataset.cloneFor = s.dataset.key || "";
+        clone.classList.remove("is-active");
+        clone.setAttribute("aria-hidden", "true");
+        clone.tabIndex = -1;
+        head.push(clone);
+        headFrag.appendChild(clone);
+      });
+
+      realSlides.forEach((s) => {
+        const clone = s.cloneNode(true);
+        clone.dataset.cloneFor = s.dataset.key || "";
+        clone.classList.remove("is-active");
+        clone.setAttribute("aria-hidden", "true");
+        clone.tabIndex = -1;
+        tail.push(clone);
+        tailFrag.appendChild(clone);
+      });
+
+      track.insertBefore(headFrag, firstReal);
+      track.insertBefore(tailFrag, endSpacer || null);
+
+      headClones = head;
+      tailClones = tail;
+      allSlides = Array.from(track.querySelectorAll(".doctor3-slide"));
+    };
+
+    const jumpToReal = (key) => {
+      const target = realByKey.get(key);
+      if (!target) return;
+      viewport.classList.add("no-scale-anim");
+      scrollToSlide(target, "auto");
+      requestAnimationFrame(() => viewport.classList.remove("no-scale-anim"));
+    };
+
+    const setActive = (nextIndex, behavior = "smooth") => {
+      const len = realSlides.length;
+      const raw = nextIndex;
+      index = (raw + len) % len;
+
+      const key = realSlides[index].dataset.key;
+      setActiveByKey(key);
+
+      let target = realSlides[index];
+      if (raw >= len && tailClones.length) target = tailClones[index];
+      if (raw < 0 && headClones.length) target = headClones[index];
+
+      scrollToSlide(target, behavior);
+    };
+
+    const stop = () => {
+      paused = true;
+      if (timerId) {
+        clearTimeout(timerId);
+        timerId = null;
+      }
+    };
+
+    const scheduleNext = () => {
+      if (paused) return;
+      if (timerId) return;
+      timerId = setTimeout(() => {
+        timerId = null;
+        setActive(index + 1, "smooth");
+        scheduleNext();
+      }, 5000);
+    };
+
+    const start = () => {
+      paused = false;
+      scheduleNext();
+    };
+
+    const restart = () => {
+      if (timerId) {
+        clearTimeout(timerId);
+        timerId = null;
+      }
+      paused = false;
+      scheduleNext();
+    };
+
+    realSlides.forEach((s, i) => {
+      s.addEventListener("click", (e) => {
+        e.preventDefault();
+        setActive(i, "smooth");
+        restart();
+      });
+    });
+
+    const getCenterSlide = () => {
+      const center = viewport.scrollLeft + viewport.clientWidth / 2;
+      let best = null;
+      let bestDist = Infinity;
+
+      allSlides.forEach((s) => {
+        const slideCenter = s.offsetLeft + s.offsetWidth / 2;
+        const dist = Math.abs(center - slideCenter);
+        if (dist < bestDist) {
+          bestDist = dist;
+          best = s;
+        }
+      });
+
+      return best;
+    };
+
+    const scheduleScrollEnd = () => {
+      if (scrollEndTimer) clearTimeout(scrollEndTimer);
+      scrollEndTimer = setTimeout(() => {
+        scrollEndTimer = null;
+        const best = getCenterSlide();
+        if (!best) return;
+        const key = best.dataset.cloneFor || best.dataset.key;
+        setActiveByKey(key);
+        setIndexByKey(key);
+        if (best.dataset.cloneFor) jumpToReal(key);
+        restart();
+      }, 120);
+    };
+
+    const onScroll = () => {
+      if (scrollRaf) return;
+      scrollRaf = requestAnimationFrame(() => {
+        scrollRaf = null;
+        const best = getCenterSlide();
+        if (!best) return;
+        const key = best.dataset.cloneFor || best.dataset.key;
+        if (!key) return;
+        setActiveByKey(key);
+        setIndexByKey(key);
+        scheduleScrollEnd();
+      });
+    };
+
+    viewport.addEventListener("scroll", onScroll, { passive: true });
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) stop();
+      else start();
+    });
+
+    const onResize = window.__PH.rafThrottle(() => {
+      scrollToSlide(realSlides[index], "auto");
+    });
+    window.addEventListener("resize", onResize, { passive: true });
+
+    ensureClones();
+    setActiveByKey(realSlides[index].dataset.key);
+    scrollToSlide(realSlides[index], "auto");
+    start();
+    return;
+  }
+
   const alignToActive = () => {
     const active = slides[index];
+    if (!active) return;
+
     const vw = viewport.clientWidth;
     const max = track.scrollWidth - vw;
     if (max <= 0) return;
@@ -258,7 +473,6 @@ function initDoctorSlider() {
     alignToActive();
   };
 
-  const DELAY = 5000;
   let timerId = null;
   let paused = false;
 
@@ -278,7 +492,7 @@ function initDoctorSlider() {
       timerId = null;
       setActive(index + 1);
       scheduleNext();
-    }, DELAY);
+    }, 5000);
   };
 
   const start = () => {
@@ -526,3 +740,419 @@ document.addEventListener("DOMContentLoaded", () => {
   initNavbarHomeTransparent();
   initMegaMenu();
 });
+
+/* =========================================================
+   Portfolio Hospital - MAIN.JS (MOBILE NAV STABLE FINAL)
+   - PC 영향 최소화: 모바일(<=991.98px)에서만 커스텀
+   - Bootstrap collapse는 PC에서 그대로 사용
+   - Mobile:
+     1) 토글 버튼의 data-bs-toggle/target을 모바일에서만 제거(Bootstrap 클릭 토글 차단)
+     2) inst.show()/inst.hide()는 우리가 타이밍 제어(닫힘 애니메이션 후 hide)
+     3) 상위메뉴 클릭 → 오른쪽 패널 하위메뉴 스왑
+     4) 스위칭 중 작대기 고정, 패널만 살짝 접기
+   ========================================================= */
+(() => {
+  "use strict";
+
+  const mq = window.matchMedia("(max-width: 991.98px)");
+  const isMobile = () => mq.matches;
+
+  const ready = (fn) => {
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", fn, { once: true });
+    } else {
+      fn();
+    }
+  };
+
+  function initMobileMegaNavFinal() {
+    const topNav = document.getElementById("topNav");
+    if (!topNav) return;
+
+    const panel = document.getElementById("mobileMegaPanel");
+    const head = document.getElementById("mnavPanelHead");
+    const body = document.getElementById("mnavPanelBody");
+    if (!panel || !head || !body) return;
+
+    const toggler = document.querySelector('.navbar-toggler[data-bs-target="#topNav"]');
+    if (!toggler) return;
+
+    const triggers = Array.from(
+      topNav.querySelectorAll('.nav-mega-link[data-mobile-acc-btn="1"][data-mega-key]')
+    );
+    if (!triggers.length) return;
+
+    if (topNav.__mnavFinalBound) return;
+    topNav.__mnavFinalBound = true;
+
+    const inst = bootstrap.Collapse.getOrCreateInstance(topNav, { toggle: false });
+
+    const NAV_CLOSE_MS = 320; // CSS --mnav-close-ms
+    const OPEN_ANIM_MS = 420;
+    const SWITCH_MS = 170;
+    const PANEL_CLOSE_MS = 220;
+
+    /* ---------------------------------------------------------
+       ✅ 0) 스크롤 고정/복원 (플리커 방지: rAF 사용 금지)
+       --------------------------------------------------------- */
+    // ✅ fixed 방식 제거: 이미지 섹션에서 white flash 방지
+    let savedScrollY = 0;
+
+    const lockScrollPreserve = () => {
+      if (document.body.__mnavScrollLocked) return;
+      document.body.__mnavScrollLocked = true;
+
+      savedScrollY = window.scrollY || window.pageYOffset || 0;
+
+      // ✅ 스크롤 잠금은 overflow로만
+      document.body.classList.add("nav-lock");
+
+      // ✅ iOS에서 rubber-band 스크롤 튐 방지(선택)
+      document.documentElement.style.overscrollBehavior = "none";
+    };
+
+    const unlockScrollPreserve = () => {
+      if (!document.body.__mnavScrollLocked) return;
+      document.body.__mnavScrollLocked = false;
+
+      // ✅ 먼저 잠금 해제
+      document.body.classList.remove("nav-lock");
+      document.documentElement.style.overscrollBehavior = "";
+
+      // ✅ 원래 위치 복원 (smooth 금지)
+      const prev = document.documentElement.style.scrollBehavior;
+      document.documentElement.style.scrollBehavior = "auto";
+      window.scrollTo(0, savedScrollY);
+      document.documentElement.style.scrollBehavior = prev || "";
+    };
+
+    /* ---------------------------------------------------------
+       1) 모바일에서 Bootstrap 클릭 토글 원천 차단 (PC는 복원)
+       --------------------------------------------------------- */
+    if (!toggler.__bsAttrsSaved) {
+      toggler.__bsAttrsSaved = true;
+      toggler.__bsToggle = toggler.getAttribute("data-bs-toggle");
+      toggler.__bsTarget = toggler.getAttribute("data-bs-target");
+    }
+
+    const disableBootstrapClickToggle = () => {
+      toggler.removeAttribute("data-bs-toggle");
+      toggler.removeAttribute("data-bs-target");
+    };
+
+    const restoreBootstrapClickToggle = () => {
+      if (toggler.__bsToggle) toggler.setAttribute("data-bs-toggle", toggler.__bsToggle);
+      if (toggler.__bsTarget) toggler.setAttribute("data-bs-target", toggler.__bsTarget);
+    };
+
+    const applyToggleMode = () => {
+      if (isMobile()) disableBootstrapClickToggle();
+      else restoreBootstrapClickToggle();
+    };
+
+    applyToggleMode();
+    mq.addEventListener?.("change", applyToggleMode);
+    window.addEventListener("resize", applyToggleMode, { passive: true });
+
+    /* ---------------------------------------------------------
+       2) 하위메뉴 캐시
+       --------------------------------------------------------- */
+    triggers.forEach((t) => t.classList.add("has-mobile-sub"));
+
+    const cache = new Map();
+    triggers.forEach((t) => {
+      const key = t.getAttribute("data-mega-key");
+      const src = topNav.querySelector(`.mobile-mega-src[data-mega-src="${key}"]`);
+      if (!src) return;
+
+      const frag = document.createDocumentFragment();
+      src.querySelectorAll("a").forEach((a) => frag.appendChild(a.cloneNode(true)));
+      cache.set(key, frag);
+    });
+
+    const resetLeft = () => {
+      triggers.forEach((t) => {
+        t.classList.remove("is-open");
+        t.setAttribute("aria-expanded", "false");
+      });
+    };
+
+    const setEmpty = (on) => topNav.classList.toggle("mnav-empty", on);
+
+    /* ---------------------------------------------------------
+       3) 햄버거 open/close
+       --------------------------------------------------------- */
+    const openHamburger = () => {
+      if (!isMobile()) return;
+      if (topNav.__navClosing) return;
+
+      // ✅ 터치 표시/포커스 남음 방지
+      document.activeElement?.blur?.();
+      toggler.blur();
+
+      lockScrollPreserve();
+
+      topNav.classList.remove("mnav-nav-closing", "mnav-nav-closing-run");
+      inst.show();
+      toggler.setAttribute("aria-expanded", "true");
+    };
+
+    const closeHamburger = () => {
+      if (!isMobile()) return;
+      if (topNav.__navClosing) return;
+      topNav.__navClosing = true;
+
+      // ✅ 닫을 때도 포커스/터치 표시 제거
+      document.activeElement?.blur?.();
+      toggler.blur();
+
+      topNav.classList.add("mnav-nav-closing");
+      topNav.classList.remove("mnav-nav-closing-run");
+
+      topNav.classList.add("mnav-closing");
+      topNav.classList.remove("mnav-opening", "mnav-switching-out", "mnav-switching-in");
+
+      requestAnimationFrame(() => {
+        topNav.classList.add("mnav-nav-closing-run");
+      });
+
+      window.setTimeout(() => {
+        inst.hide();
+      }, NAV_CLOSE_MS);
+
+      toggler.setAttribute("aria-expanded", "false");
+    };
+
+    if (!toggler.__mnavClickBound) {
+      toggler.__mnavClickBound = true;
+
+      toggler.addEventListener(
+        "click",
+        (e) => {
+          if (!isMobile()) return;
+
+          e.preventDefault();
+          e.stopPropagation();
+          if (typeof e.stopImmediatePropagation === "function") e.stopImmediatePropagation();
+
+          // ✅ 클릭 직후에도 남는 포커스 제거(모바일에서 종종 필요)
+          setTimeout(() => {
+            document.activeElement?.blur?.();
+            toggler.blur();
+          }, 0);
+
+          const isShown = topNav.classList.contains("show");
+          if (isShown) closeHamburger();
+          else openHamburger();
+        },
+        true
+      );
+    }
+
+    /* ---------------------------------------------------------
+       4) 오른쪽 패널(하위메뉴) 열기/스위칭/닫기
+       --------------------------------------------------------- */
+    let switching = false;
+    let closeTimer = 0;
+
+    const setSwitching = (on) => {
+      switching = on;
+      topNav.classList.toggle("nav-switching", on);
+    };
+
+    const playOpenAnim = (onlyPanel = false) => {
+      topNav.classList.add("mnav-has-open");
+      topNav.classList.remove("mnav-closing", "mnav-switching-out");
+
+      if (onlyPanel) return;
+
+      topNav.classList.remove("mnav-opening");
+      void topNav.offsetWidth;
+      topNav.classList.add("mnav-opening");
+      window.setTimeout(() => topNav.classList.remove("mnav-opening"), OPEN_ANIM_MS);
+    };
+
+    const openWith = (t) => {
+      const key = t.getAttribute("data-mega-key");
+      const frag = cache.get(key);
+      if (!frag) return;
+
+      window.clearTimeout(closeTimer);
+      topNav.classList.remove("mnav-closing");
+      setSwitching(false);
+
+      const wasOpen = topNav.classList.contains("mnav-has-open");
+
+      resetLeft();
+      t.classList.add("is-open");
+      t.setAttribute("aria-expanded", "true");
+
+      const applyContent = () => {
+        head.textContent = "";
+        body.replaceChildren(frag.cloneNode(true));
+        setEmpty(false);
+      };
+
+      if (wasOpen) {
+        setSwitching(true);
+        topNav.classList.remove("mnav-opening");
+        topNav.classList.add("mnav-switching-out");
+
+        window.setTimeout(() => {
+          applyContent();
+
+          topNav.classList.remove("mnav-switching-in");
+          void topNav.offsetWidth;
+          topNav.classList.add("mnav-switching-in");
+          window.setTimeout(() => topNav.classList.remove("mnav-switching-in"), OPEN_ANIM_MS);
+
+          topNav.classList.add("mnav-has-open");
+          topNav.classList.remove("mnav-closing", "mnav-switching-out");
+          setSwitching(false);
+        }, SWITCH_MS);
+      } else {
+        applyContent();
+        playOpenAnim(false);
+      }
+
+      t.blur();
+    };
+
+    const closePanel = () => {
+      if (!topNav.classList.contains("mnav-has-open")) return;
+
+      setSwitching(true);
+      topNav.classList.add("mnav-closing");
+
+      closeTimer = window.setTimeout(() => {
+        topNav.classList.remove("mnav-has-open", "mnav-closing", "mnav-opening");
+        resetLeft();
+        setSwitching(false);
+
+        head.textContent = "";
+        body.replaceChildren();
+        setEmpty(true);
+      }, PANEL_CLOSE_MS);
+    };
+
+    topNav.addEventListener(
+      "click",
+      (e) => {
+        if (!isMobile()) return;
+
+        const t = e.target.closest('.nav-mega-link[data-mobile-acc-btn="1"][data-mega-key]');
+        if (!t) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (switching) return;
+
+        const isAlready =
+          t.classList.contains("is-open") && topNav.classList.contains("mnav-has-open");
+
+        if (isAlready) {
+          closePanel();
+          return;
+        }
+
+        openWith(t);
+      },
+      true
+    );
+
+    panel.addEventListener("click", (e) => {
+      if (!isMobile()) return;
+      const a = e.target.closest("a");
+      if (!a) return;
+      closeHamburger();
+    });
+
+    /* ---------------------------------------------------------
+       5) collapse 이벤트 동기화 + 스크롤락
+       --------------------------------------------------------- */
+    topNav.addEventListener("shown.bs.collapse", () => {
+      if (!isMobile()) return;
+
+      setEmpty(true);
+
+      topNav.classList.remove("mnav-nav-closing", "mnav-nav-closing-run");
+      topNav.classList.remove("mnav-opening");
+      void topNav.offsetWidth;
+      topNav.classList.add("mnav-opening");
+      window.setTimeout(() => topNav.classList.remove("mnav-opening"), OPEN_ANIM_MS);
+
+      document.body.classList.add("nav-lock");
+    });
+
+    topNav.addEventListener("hidden.bs.collapse", () => {
+      window.clearTimeout(closeTimer);
+
+      topNav.classList.remove(
+        "mnav-has-open",
+        "mnav-closing",
+        "mnav-opening",
+        "nav-switching",
+        "mnav-switching-out",
+        "mnav-switching-in",
+        "mnav-nav-closing",
+        "mnav-nav-closing-run"
+      );
+
+      resetLeft();
+      setSwitching(false);
+
+      head.textContent = "";
+      body.replaceChildren();
+      setEmpty(true);
+
+      topNav.__navClosing = false;
+
+      // ✅ 터치 표시/포커스 제거 (끝까지)
+      document.activeElement?.blur?.();
+      toggler.blur();
+
+      // ✅ 플리커 방지: 먼저 스크롤 복원(동기) → 그 다음 nav-lock 제거
+      unlockScrollPreserve();
+      document.body.classList.remove("nav-lock");
+    });
+
+    head.textContent = "";
+    setEmpty(true);
+  }
+  function applySubNavOffset() {
+    const mq = window.matchMedia("(max-width: 991.98px)");
+    if (!mq.matches) return;
+
+    const body = document.body;
+    if (!body.classList.contains("page-sub")) return;
+
+    const header = document.querySelector("header.sticky-top");
+    if (!header) return;
+
+    const h = Math.ceil(header.getBoundingClientRect().height || 64);
+
+    // ✅ CSS !important를 이기도록 important로 지정
+    body.style.setProperty("padding-top", `${h}px`, "important");
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    applySubNavOffset();
+    window.addEventListener("resize", applySubNavOffset, { passive: true });
+    window.addEventListener("orientationchange", applySubNavOffset, { passive: true });
+  });
+
+  ready(() => {
+    initMobileMegaNavFinal();
+
+    // 기존 init들 (있으면 실행)
+    const safeCall = (fnName) => {
+      const fn = window[fnName];
+      if (typeof fn === "function") fn();
+    };
+
+    safeCall("initTreat2");
+    safeCall("initDoctor");
+    safeCall("initDoctorSlider");
+  });
+})();

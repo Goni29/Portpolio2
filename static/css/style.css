@@ -451,6 +451,10 @@ body.page-sub .navbar .navbar-brand {
     border-radius: 0 0 28px 28px;
   }
 
+  .hero-overlay {
+    background: linear-gradient(90deg, rgba(0, 0, 0, .78), rgba(0, 0, 0, .34) 60%, rgba(0, 0, 0, .28));
+  }
+
   .hero-slide {
     height: clamp(520px, 72vh, 680px);
   }
@@ -1107,6 +1111,35 @@ body.page-sub .navbar .navbar-brand {
 .news-tabs .nav-link:focus,
 .news-tabs .nav-link:focus-visible {
   box-shadow: 0 0 0 4px rgba(var(--ink-rgb), .12) !important;
+}
+
+/* 모바일 줄바꿈 전용 */
+.m-break {
+  display: none;
+}
+
+@media (max-width: 991.98px) {
+  .m-break {
+    display: inline;
+  }
+}
+
+/* Mobile: prevent scroll jitter on active tabs */
+@media (hover: none) and (pointer: coarse) {
+  .news-tabs .nav-link {
+    transition: background .15s ease, color .15s ease, border-color .15s ease;
+  }
+
+  .news-tabs .nav-link:hover {
+    transform: none;
+  }
+
+  html.js body.page-home .news-tabs.reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    transition: none !important;
+  }
 }
 
 /* =========================================================
@@ -2969,6 +3002,36 @@ header.sticky-top .navbar .nav-link {
   opacity: .35 !important;
 }
 
+/* Signup modal (match site tone) */
+.signup-modal {
+  border-radius: 18px;
+  border: 1px solid rgba(var(--ink-rgb), .12);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, .20);
+  overflow: hidden;
+}
+
+.signup-modal .modal-header {
+  border-bottom: 0;
+  padding: 18px 20px 10px;
+}
+
+.signup-modal .modal-title {
+  font-weight: 900;
+  letter-spacing: -0.3px;
+  color: var(--ink-92);
+}
+
+.signup-modal .modal-body {
+  padding: 0 20px 16px;
+  color: var(--ink-78);
+  font-weight: 600;
+}
+
+.signup-modal .modal-footer {
+  border-top: 0;
+  padding: 0 20px 18px;
+}
+
 /* ✅ 모달 외곽 네모 + 그림자 */
 .rsv-modal {
   border-radius: 0 !important;
@@ -3208,6 +3271,25 @@ header.sticky-top .navbar .nav-link {
 .rsv-submit:hover {
   background: rgba(15, 23, 42, 1);
   border-color: rgba(15, 23, 42, 1);
+}
+
+/* 예약확인 결과 */
+.rsv-result {
+  margin-top: 6px;
+}
+
+.rsv-result-list {
+  display: grid;
+  gap: 14px;
+}
+
+.rsv-result-empty {
+  padding: 14px;
+  border: 1px solid var(--rsv-line);
+  background: var(--rsv-soft);
+  color: var(--rsv-muted);
+  font-weight: 800;
+  font-size: 13px;
 }
 
 /* 모바일 */
@@ -3903,6 +3985,39 @@ header.sticky-top .navbar .nav-link {
   box-shadow: 0 0 0 4px rgba(30, 102, 255, .10);
 }
 
+.consult-form input.input-error,
+.consult-form textarea.input-error {
+  border-color: rgba(163, 24, 24, .55);
+  box-shadow: 0 0 0 4px rgba(163, 24, 24, .12);
+}
+
+.form-error {
+  margin-top: 6px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #a31818;
+  background: rgba(163, 24, 24, .08);
+  border: 1px solid rgba(163, 24, 24, .18);
+}
+
+.form-error:empty {
+  display: none;
+}
+
+.form-success {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  font-weight: 700;
+  color: #1b4bd6;
+  background: rgba(30, 102, 255, .10);
+  border: 1px solid rgba(30, 102, 255, .22);
+}
+
 .consult-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -4212,6 +4327,27 @@ body.page-home header.sticky-top:not(.mega-open) .navbar.navbar-transparent:not(
   background: var(--on-dark-92);
 }
 
+/* HOME Hero: reserve button should be white for contrast (desktop) */
+@media (min-width: 992px) {
+  body.page-home header.sticky-top:not(.mega-open) .navbar.navbar-transparent:not(.is-solid) .nav-reserve {
+    background: rgba(var(--white-rgb), .94) !important;
+    color: var(--ink) !important;
+    border-color: transparent !important;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, .18);
+  }
+
+  body.page-home header.sticky-top:not(.mega-open) .navbar.navbar-transparent:not(.is-solid) .nav-reserve:hover,
+  body.page-home header.sticky-top:not(.mega-open) .navbar.navbar-transparent:not(.is-solid) .nav-reserve:focus {
+    background: rgba(var(--white-rgb), 1) !important;
+    color: var(--ink) !important;
+  }
+
+  body.page-home header.sticky-top:not(.mega-open) .navbar.navbar-transparent:not(.is-solid) .nav-reserve:focus-visible {
+    outline: 2px solid rgba(var(--white-rgb), .8);
+    outline-offset: 2px;
+  }
+}
+
 /* =========================================================
    B) Mega open 상태에서는 무조건 "솔리드 네비" 규칙 적용
    - (너가 이미 mega-open 때 nav-link 색 바꾸고 있으니 동일하게 맞춤)
@@ -4257,3 +4393,1302 @@ body.page-sub .navbar .nav-auth-link:hover {
 body.page-home header.sticky-top:not(.mega-open) .navbar.navbar-transparent:not(.is-solid) .nav-auth-link:focus-visible {
   outline-color: rgba(var(--white-rgb), .55);
 }
+
+/* 여기서부터 모바일 */
+
+/* =========================================================
+   MOBILE PATCH (ONLY) - CLEAN VERSION
+   Applies only under 992px
+   ========================================================= */
+@media (max-width: 991.98px) {
+
+  /* =========================================================
+   MOBILE NAV (<= 991.98px) - SINGLE SOURCE OF TRUTH (FINAL)
+   목표:
+   - PC 영향 0% (모든 규칙은 @media 안)
+   - Bootstrap collapse는 "상태 클래스(show)"만 참고 (모바일 클릭 토글은 JS가 차단)
+   - #topNav: navbar 아래에 겹쳐서 표시(본문 밀림/튐 제거)
+   - 닫을 때도 슬라이드(위로 올라가며 사라짐) 보장
+   - 작대기/오른쪽패널: 열기/닫기 슬라이드, 스위칭 시 작대기 고정
+   ========================================================= */
+
+  @media (max-width: 991.98px) {
+
+    :root {
+      --mnav-left: 52%;
+      --mnav-mid: 8%;
+      --mnav-right: 40%;
+
+      --mnav-open-ms: 360ms;
+      --mnav-close-ms: 320ms;
+      --mnav-switch-ms: 160ms;
+      --mnav-ease: cubic-bezier(.2, .8, .2, 1);
+
+      --nav-drop: 10px;
+      /* #topNav 자체가 내려오는 거리 */
+    }
+
+    body.page-sub header.sticky-top {
+      position: fixed !important;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1050;
+    }
+
+    /* ✅ 네비 높이만큼 본문 내려주기 */
+    body.page-sub {
+      padding-top: 0 !important;
+      /* 네비 실제 높이에 맞게 64~72 조절 */
+    }
+
+    /* ===== Navbar readability (mobile only) ===== */
+    header.sticky-top .navbar.navbar-transparent {
+      background: rgba(255, 255, 255, .98) !important;
+      border-bottom: 1px solid rgba(15, 23, 42, .10) !important;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, .10);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      z-index: 1050;
+    }
+
+    header.sticky-top .navbar.navbar-transparent .navbar-brand,
+    header.sticky-top .navbar.navbar-transparent .nav-link {
+      color: #0f172a !important;
+    }
+
+    /* iOS flash 방지: 메뉴 열리면 blur OFF */
+    body.nav-lock header.sticky-top .navbar.navbar-transparent {
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      background: rgba(255, 255, 255, .98) !important;
+    }
+
+    /* ===== #topNav: navbar 아래에 겹치기(본문 밀림 제거) ===== */
+    header.sticky-top .navbar {
+      position: relative;
+    }
+
+    /* Bootstrap height 애니메이션 무력화(튐 원인 제거) */
+    #topNav.collapsing {
+      height: auto !important;
+      transition: none !important;
+    }
+
+    /* 모바일에서는 display:none으로 숨기지 않게(visibility로 제어) */
+    #topNav.collapse,
+    #topNav.collapsing {
+      display: block !important;
+    }
+
+    #topNav {
+      position: absolute !important;
+      left: 0 !important;
+      right: 0 !important;
+      top: 100% !important;
+
+      background: rgba(255, 255, 255, .99) !important;
+      border-top: 1px solid rgba(15, 23, 42, .10) !important;
+      box-shadow: 0 18px 44px rgba(15, 23, 42, .14);
+
+      max-height: calc(100vh - 64px);
+      overflow: hidden;
+      -webkit-overflow-scrolling: touch;
+
+      /* 기본(닫힘) */
+      visibility: hidden;
+      opacity: 0;
+      transform: translate3d(0, calc(-1 * var(--nav-drop)), 0);
+      pointer-events: none;
+
+      transition:
+        opacity .18s ease,
+        transform .26s var(--mnav-ease),
+        visibility 0s linear .26s;
+
+      will-change: transform, opacity;
+    }
+
+    /* ✅ 열림은 Bootstrap .show를 기준으로 */
+    #topNav.collapse.show {
+      display: grid !important;
+      grid-template-columns: var(--mnav-left) var(--mnav-mid) var(--mnav-right);
+      align-items: start;
+      padding-top: 6px;
+
+      visibility: visible;
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+      pointer-events: auto;
+
+      transition:
+        opacity .18s ease,
+        transform .26s var(--mnav-ease),
+        visibility 0s linear 0s;
+    }
+
+    /* ✅ 닫는 동안(.show가 빠져도) 화면에 남겨서 애니메이션 보장 */
+    #topNav.mnav-nav-closing {
+      display: block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      /* 닫는 동안은 보이게 유지 */
+      pointer-events: none !important;
+      /* 닫는 중 클릭 방지 */
+    }
+
+    /* ===== LEFT column (메인 메뉴 리스트) ===== */
+    #topNav .navbar-nav {
+      margin: 0 !important;
+      padding: 8px 0 12px !important;
+      gap: 0 !important;
+      align-items: stretch !important;
+
+      max-height: calc(100vh - 64px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    #topNav .nav-item {
+      width: 100%;
+    }
+
+    #topNav .nav-link,
+    #topNav .nav-reserve,
+    #topNav .mobile-auth a {
+      white-space: normal;
+      word-break: keep-all;
+    }
+
+    #topNav .nav-link,
+    #topNav .nav-link:visited,
+    #topNav .nav-link:hover,
+    #topNav .nav-link:focus,
+    #topNav .nav-link:active {
+      color: #0f172a !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      outline: none !important;
+      text-decoration: none !important;
+    }
+
+    #topNav .nav-link {
+      padding: 14px 10px !important;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 48px;
+      line-height: 20px;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    #topNav .nav-mega-link {
+      font-weight: 600;
+    }
+
+    #topNav .nav-mega-link.is-open {
+      color: #0b1220 !important;
+      font-weight: 800 !important;
+    }
+
+    /* 모바일 하위메뉴 표시 훅(화살표 제거 유지) */
+    #topNav .nav-mega-link.has-mobile-sub::after {
+      content: "" !important;
+      display: none !important;
+    }
+
+    /* 예약하기 버튼을 모바일에서 텍스트 메뉴처럼 */
+    #topNav .nav-reserve {
+      background: transparent !important;
+      border: 0 !important;
+      box-shadow: none !important;
+      color: #0f172a !important;
+
+      padding: 14px 10px !important;
+      width: 100%;
+      text-align: left !important;
+
+      font-weight: 700 !important;
+      border-radius: 0 !important;
+      font-size: inherit !important;
+      line-height: inherit !important;
+    }
+
+    /* ===== MID column ===== */
+    .mnav-divider {
+      display: block !important;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    /* ===== RIGHT column (패널) ===== */
+    .mnav-panel {
+      display: block !important;
+      padding: 8px 0 12px;
+
+      max-height: calc(100vh - 64px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+
+      /* 기본은 애니메이션 시스템이 제어 */
+      backface-visibility: hidden;
+    }
+
+    .mnav-panel-inner {
+      background: transparent !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+    }
+
+    .mnav-panel-head {
+      padding: 14px 10px 10px !important;
+      font-weight: 800;
+      color: #0b1220;
+    }
+
+    .mnav-panel-body {
+      padding: 0 !important;
+    }
+
+    .mnav-panel-placeholder {
+      padding: 10px 10px 12px;
+      color: #475569;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    #mobileMegaPanel .mobile-mega-link {
+      display: block;
+      padding: 14px 10px !important;
+      color: #0f172a !important;
+      text-decoration: none !important;
+      background: transparent !important;
+      font-weight: 650;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #mobileMegaPanel .mobile-mega-link:hover {
+      background: rgba(15, 23, 42, .04) !important;
+    }
+
+    #mobileMegaPanel .mobile-mega-link:active {
+      background: rgba(15, 23, 42, .06) !important;
+    }
+
+    /* ===== mobile auth ===== */
+    #topNav .mobile-auth {
+      background: transparent !important;
+      border: 0 !important;
+      box-shadow: none !important;
+      position: static !important;
+      margin-top: 10px !important;
+      padding-top: 0 !important;
+    }
+
+    #topNav .mobile-auth a {
+      display: block;
+      padding: 12px 10px !important;
+      font-weight: 700 !important;
+      color: #0f172a !important;
+      text-decoration: none !important;
+      background: transparent !important;
+    }
+
+    /* ===== body scroll lock ===== */
+    body.nav-lock {
+      left: 0;
+      right: 0;
+      width: 100%;
+      overflow: hidden !important;
+    }
+
+    /* 전환 중 오클릭 방지 */
+    #topNav.nav-switching a {
+      pointer-events: none !important;
+    }
+
+    #topNav.nav-switching .nav-mega-link {
+      pointer-events: auto !important;
+    }
+
+    /* =========================================================
+     LINE + PANEL animation system (single)
+     ========================================================= */
+
+    /* 중앙 작대기 기본(숨김 + 위에 대기) */
+    #topNav::before {
+      content: "";
+      position: absolute;
+      z-index: 10;
+      pointer-events: none;
+
+      left: 50%;
+      top: 18px;
+      bottom: 18px;
+      width: 1px;
+      background: rgba(15, 23, 42, .10);
+
+      opacity: 0;
+      transform: translate3d(-50%, -14px, 0);
+      will-change: transform, opacity;
+    }
+
+    /* 패널 기본(숨김 + 위에 대기) */
+    #topNav .mnav-panel {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transform: translate3d(0, -18px, 0);
+      will-change: transform, opacity;
+    }
+
+    /* 열려있는 동안 "착지(0)" 고정 */
+    #topNav.mnav-has-open::before {
+      opacity: 1;
+      transform: translate3d(-50%, 0, 0);
+    }
+
+    #topNav.mnav-has-open .mnav-panel {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transform: translate3d(0, 0, 0);
+    }
+
+    /* ✅ 패널 열림(상위메뉴 클릭) 때만 작대기 내려오기 */
+    #topNav.mnav-has-open:not(.mnav-switching-out)::before {
+      animation: mnavLineDrop var(--mnav-open-ms) var(--mnav-ease) both;
+    }
+
+    #topNav.mnav-opening .mnav-panel {
+      animation: mnavPanelDrop var(--mnav-open-ms) var(--mnav-ease) both;
+    }
+
+    /* CLOSE (패널/작대기 슬라이드) */
+    #topNav.mnav-closing::before,
+    #topNav.mnav-nav-closing::before {
+      animation: mnavLineUp var(--mnav-close-ms) var(--mnav-ease) both;
+    }
+
+    #topNav.mnav-closing .mnav-panel,
+    #topNav.mnav-nav-closing .mnav-panel {
+      animation: mnavPanelUp var(--mnav-close-ms) var(--mnav-ease) both;
+    }
+
+    /* SWITCH: 작대기 고정, 패널만 살짝 접기 */
+    #topNav.mnav-switching-out::before,
+    #topNav.nav-switching::before {
+      animation: none !important;
+      opacity: 1 !important;
+      transform: translate3d(-50%, 0, 0) !important;
+    }
+
+    #topNav.mnav-switching-out .mnav-panel {
+      animation: mnavPanelUp var(--mnav-switch-ms) var(--mnav-ease) both;
+    }
+
+    @keyframes mnavLineDrop {
+      from {
+        opacity: 0;
+        transform: translate3d(-50%, -14px, 0);
+      }
+
+      to {
+        opacity: 1;
+        transform: translate3d(-50%, 0, 0);
+      }
+    }
+
+    @keyframes mnavPanelDrop {
+      from {
+        opacity: 0;
+        transform: translate3d(0, -18px, 0);
+      }
+
+      to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+      }
+    }
+
+    @keyframes mnavLineUp {
+      from {
+        opacity: 1;
+        transform: translate3d(-50%, 0, 0);
+      }
+
+      to {
+        opacity: 0;
+        transform: translate3d(-50%, -14px, 0);
+      }
+    }
+
+    @keyframes mnavPanelUp {
+      from {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+      }
+
+      to {
+        opacity: 0;
+        transform: translate3d(0, -18px, 0);
+      }
+    }
+
+    /* 애니메이션 중 transition 개입 금지 */
+    #topNav.mnav-opening .mnav-panel,
+    #topNav.mnav-closing .mnav-panel,
+    #topNav.mnav-switching-out .mnav-panel,
+    #topNav.mnav-opening::before,
+    #topNav.mnav-closing::before {
+      transition: none !important;
+    }
+  }
+
+  /* 닫기 시작 프레임(열림 상태를 확정) */
+  #topNav.mnav-nav-closing {
+    display: block !important;
+    visibility: visible !important;
+    pointer-events: none !important;
+
+    /* ✅ 시작점 고정(열림) */
+    transform: translate3d(0, 0, 0) !important;
+    opacity: 1 !important;
+
+    /* 시작 프레임에서는 전환 금지 */
+    transition: none !important;
+  }
+
+  /* 다음 프레임에 붙을 클래스: 실제 닫힘 모션 */
+  #topNav.mnav-nav-closing.mnav-nav-closing-run {
+    transform: translate3d(0, calc(-1 * var(--nav-drop)), 0) !important;
+    opacity: 0 !important;
+
+    transition:
+      transform var(--mnav-close-ms) var(--mnav-ease),
+      opacity var(--mnav-close-ms) var(--mnav-ease) !important;
+  }
+
+  /* 스위칭에서 다시 열릴 때 패널만 내려오기 */
+  #topNav.mnav-switching-in .mnav-panel {
+    animation: mnavPanelDrop var(--mnav-open-ms) var(--mnav-ease) both;
+  }
+
+  /* ✅ Grid 안에서 overflow 스크롤이 제대로 먹게 만드는 핵심 */
+  #topNav.collapse.show {
+    /* 이거는 이미 있을 텐데, 혹시 없으면 유지 */
+    align-items: start;
+  }
+
+  /* ✅ grid 아이템들은 기본 min-height:auto라 스크롤이 막힘 → 0으로 풀어줌 */
+  #topNav .navbar-nav,
+  #topNav .mnav-divider,
+  #topNav .mnav-panel {
+    min-height: 0 !important;
+  }
+
+  /* ✅ 가로모드에서 하단 잘림 방지(지원 브라우저에선 dvh가 더 정확) */
+  #topNav {
+    max-height: calc(100dvh - 64px) !important;
+  }
+
+  #topNav .navbar-nav,
+  #topNav .mnav-panel {
+    max-height: calc(100dvh - 64px) !important;
+  }
+
+  #topNav .navbar-nav,
+  #topNav .mnav-panel {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+  }
+
+  /* =========================
+     HERO
+     ========================= */
+  .hero-wrap .hero-slide {
+    min-height: clamp(420px, 70vh, 560px);
+    background-size: cover !important;
+    background-position: center center !important;
+  }
+
+  .hero-wrap .carousel-inner .carousel-item:nth-child(1) .hero-slide {
+    background-position: 70% center !important;
+  }
+
+  .hero-wrap .carousel-inner .carousel-item:nth-child(2) .hero-slide {
+    background-position: 50% center !important;
+  }
+
+  .hero-controls .hero-nav {
+    color: #fff !important;
+    background: rgba(15, 23, 42, .28) !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .hero-controls .hero-nav:active,
+  .hero-controls .hero-nav:focus {
+    color: #fff !important;
+    background: rgba(15, 23, 42, .28) !important;
+    box-shadow: none !important;
+    outline: none !important;
+  }
+
+  /* =========================
+     TREAT2  ✅ Doctor처럼 “가로 슬라이더” 확정
+     - 선택자 id 중심으로 단순화(적용 실패 방지)
+     ========================= */
+  #treatViewport {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+    padding: 0 16px !important;
+    touch-action: pan-x pan-y;
+  }
+
+  #treatRail {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    gap: 14px !important;
+    align-items: stretch !important;
+    width: max-content !important;
+  }
+
+  #treatRail .treat2-card {
+    flex: 0 0 auto !important;
+    width: min(86vw, 420px) !important;
+    scroll-snap-align: center !important;
+
+    /* ✅ 세로로 쌓이게 만드는 흔한 규칙 방어 */
+    display: inline-flex !important;
+    max-width: none !important;
+  }
+
+  /* 배경이미지 영역은 카드 안에서 보기 좋게만 */
+  #treatRail .treat2-card .t2-bg {
+    width: 100% !important;
+    height: clamp(160px, 26vh, 210px) !important;
+    background-size: cover !important;
+    background-position: center center !important;
+  }
+
+  /* =========================
+     DOCTOR (레이아웃만: JS는 별도)
+     ========================= */
+  #doctorViewport {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+    padding: 0 16px !important;
+    touch-action: pan-x pan-y;
+  }
+
+  #doctorTrack {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    gap: 14px !important;
+    align-items: stretch !important;
+    width: max-content !important;
+  }
+
+  #doctorTrack .doctor3-slide {
+    flex: 0 0 auto !important;
+    width: min(86vw, 420px) !important;
+    scroll-snap-align: center !important;
+  }
+
+  #doctorTrack .doctor3-slide img {
+    width: 100% !important;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    object-position: center center;
+    display: block;
+  }
+
+  /* =========================
+     NEWS
+     ========================= */
+  .news-center {
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  .news-wrap .news-list,
+  .news-wrap .row {
+    justify-content: center !important;
+  }
+
+  .news-wrap .news-item,
+  .news-wrap .news-card {
+    width: min(92vw, 560px);
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+}
+
+/* =========================================================
+   MOBILE HOTFIX - Treat2 카드 전체를 이미지로 (빈 회색 제거)
+   ========================================================= */
+@media (max-width: 991.98px) {
+
+  /* 카드 자체 높이(원하는 느낌으로 조절 가능) */
+  #treatRail .treat2-card {
+    position: relative !important;
+    height: 240px !important;
+    /* 필요하면 220~280 사이로 조절 */
+    overflow: hidden !important;
+    border-radius: 22px !important;
+    padding: 0 !important;
+  }
+
+  /* ✅ 배경 이미지를 카드 전체에 깔기 */
+  #treatRail .treat2-card .t2-bg {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+
+    /* 예전에 넣었던 height/aspect-ratio 무력화 */
+    aspect-ratio: auto !important;
+  }
+
+  /* dim도 전체 덮기 */
+  #treatRail .treat2-card .t2-dim {
+    position: absolute !important;
+    inset: 0 !important;
+  }
+
+  /* 텍스트는 카드 아래쪽에 고정해서 PC처럼 오버레이 */
+  #treatRail .treat2-card .t2-content {
+    position: absolute !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    z-index: 2 !important;
+    padding: 18px 18px 16px !important;
+  }
+}
+
+/* =========================================================
+   MOBILE Treat2 - 텍스트 하단 배치 + 카드 전체 이미지
+   ========================================================= */
+@media (max-width: 991.98px) {
+
+  /* 카드 전체를 이미지로 채우고 오버레이 구조로 */
+  #treatRail .treat2-card {
+    position: relative !important;
+    height: 260px !important;
+    /* 원하면 240~300 조절 */
+    overflow: hidden !important;
+    border-radius: 22px !important;
+    padding: 0 !important;
+  }
+
+  /* 배경이미지: 카드 전체 */
+  #treatRail .treat2-card .t2-bg {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background-size: cover !important;
+    background-position: center center !important;
+    aspect-ratio: auto !important;
+    /* 기존 aspect-ratio 무력화 */
+  }
+
+  /* dim: 카드 전체 */
+  #treatRail .treat2-card .t2-dim {
+    position: absolute !important;
+    inset: 0 !important;
+  }
+
+  /* ✅ 텍스트를 카드 하단으로 고정 */
+  #treatRail .treat2-card .t2-content {
+    position: absolute !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    z-index: 2 !important;
+
+    /* 아래쪽에 모이게 */
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-end !important;
+
+    padding: 18px 18px 16px !important;
+  }
+
+  /* 제목/설명/태그 간격 조금 정리(원하면 숫자만 조절) */
+  #treatRail .treat2-card .t2-title {
+    margin-bottom: 6px !important;
+  }
+
+  #treatRail .treat2-card .t2-desc {
+    margin-bottom: 10px !important;
+    line-height: 1.5;
+    min-height: calc(1.5em * 2);
+    white-space: normal;
+    word-break: keep-all;
+    line-break: strict;
+  }
+
+  /* 태그가 아래쪽에 잘 붙도록 */
+  #treatRail .treat2-card .t2-tags {
+    margin-top: 0 !important;
+  }
+}
+
+/* =========================================================
+   Treat2 MOBILE - 마지막 카드도 중앙까지 오게 "끝 패딩" 보장
+   (PC 영향 없음)
+   ========================================================= */
+@media (max-width: 991.98px) {
+
+  /* 카드 폭을 한 군데서 고정 (네 레이아웃에 맞춰 숫자만 조절 가능) */
+  .treat2-wrap {
+    --treat-card-w: 78vw;
+    /* 필요하면 74~82vw 사이로 */
+    --treat-gap: 14px;
+  }
+
+  /* 가로 스크롤 레일 양끝에 중앙정렬용 패딩 */
+  #treatRail {
+    display: flex;
+    gap: var(--treat-gap);
+
+    /* ✅ 핵심: (화면 - 카드폭)/2 만큼 양끝 패딩 */
+    padding-left: calc((100vw - var(--treat-card-w)) / 2);
+    padding-right: calc((100vw - var(--treat-card-w)) / 2);
+  }
+
+  /* 카드 폭을 레일 기준으로 고정 */
+  #treatRail .treat2-card {
+    flex: 0 0 var(--treat-card-w);
+  }
+
+  /* 배경 포지션도 모바일에서 강제(혹시 PC 규칙이 덮으면 대비) */
+  #treatRail .treat2-card .t2-bg {
+    background-position: center center !important;
+  }
+}
+
+/* =========================================================
+   Doctor3 - Mobile FINAL (PC 영향 없음)
+   - 모바일에서 doctor3 레이아웃(특히 이미지 카드 박스)을 화면 중앙에 고정
+   - 풀블리드/컬럼 레이아웃 때문에 박스가 왼쪽으로 밀리는 문제 차단
+   ========================================================= */
+@media (max-width: 991.98px) {
+
+  /* (선택) fullbleed가 모바일에서 당기는 경우 대비 - 안전 중립화 */
+  #doctorSection.doctor3-fullbleed {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    left: auto !important;
+    right: auto !important;
+    transform: none !important;
+  }
+
+  /* 모바일에서는 좌/우 컬럼을 세로로 쌓고 전체를 중앙 정렬 */
+  #doctorSection .doctor3-inner {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+  }
+
+  /* 오른쪽(이미지 영역) 자체를 중앙에 */
+  #doctorSection .doctor3-right {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
+  }
+
+  /* ✅ 레일(viewport) 박스 자체를 화면 중앙에 고정 */
+  #doctorSection .doctor3-viewport {
+    width: min(92vw, 520px) !important;
+    max-width: 100% !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+}
+
+/* =========================================================
+   Doctor3 모바일: "박스+이미지" 통째로 작아짐 (여백 없음)
+   - width는 JS가 동일하게 유지 → 중앙정렬/스냅 안정
+   - 비활성: scale(.92)
+   - 활성: scale(1)
+   - 자동 이동 중(.no-scale-anim)엔 transform transition만 끔(밀림 방지)
+   ========================================================= */
+@media (pointer: coarse) {
+
+  /* ✅ 비활성(기본) = 전체 카드 통째로 축소 */
+  #doctorTrack .doctor3-slide {
+    transform: translateZ(0) scale(.92);
+    transform-origin: 50% 50%;
+    will-change: transform;
+    transition: transform .18s ease;
+  }
+
+  /* ✅ 활성 = 원래 크기 */
+  #doctorTrack .doctor3-slide.is-active {
+    transform: translateZ(0) scale(1);
+  }
+
+  /* ✅ 자동 이동 중엔 scale 애니메이션만 꺼서 '밀림/흔들림' 방지 */
+  #doctorViewport.no-scale-anim #doctorTrack .doctor3-slide {
+    transition: none !important;
+  }
+}
+
+@media (pointer: coarse) {
+  #doctorTrack .doctor3-slide {
+    overflow: hidden;
+    /* 기본 */
+    border-radius: 28px;
+    /* 기존 유지 */
+    -webkit-mask-image: -webkit-radial-gradient(white, black);
+    /* iOS/Edge 라운드 클리핑 보강 */
+    transform: translateZ(0) scale(.92);
+    /* 네가 쓰는 scale 유지 */
+    backface-visibility: hidden;
+  }
+
+  #doctorTrack .doctor3-slide.is-active {
+    transform: translateZ(0) scale(1);
+  }
+}
+
+/* =========================================================
+   Doctor3 모바일: 가로 스크롤바 숨기기 (기능 유지)
+   ========================================================= */
+@media (pointer: coarse) {
+
+  /* Chrome / Edge / Safari */
+  #doctorViewport {
+    scrollbar-width: none;
+    /* Firefox */
+    -ms-overflow-style: none;
+    /* IE / Edge legacy */
+  }
+
+  #doctorViewport::-webkit-scrollbar {
+    display: none;
+    /* Chrome / Safari */
+  }
+}
+
+/* =========================================================
+   Subnav (탭바) - MOBILE 대응 (중복 HTML 없음)
+   - PC: 기존 고정 균일폭/스크롤 금지 그대로
+   - Mobile: 가로 스와이프 탭 + 스크롤바 숨김
+   ========================================================= */
+@media (max-width: 991.98px) {
+
+  /* 모바일에선 높이/폭 토큰을 조금 줄이는 게 보기 좋음(선택) */
+  :root {
+    --subtab-h: 56px;
+    --subtab-w: auto;
+    /* 균일폭 강제 X (모바일은 pill 형태가 자연스러움) */
+    --subtab-fs: 14px;
+  }
+
+  .subnav {
+    background: rgba(30, 41, 59, .92);
+  }
+
+  /* ✅ PC에서 숨기던 overflow를 모바일에서만 풀기 */
+  .subnav-inner {
+    height: auto;
+    justify-content: flex-start;
+    overflow-x: auto;
+    overflow-y: hidden;
+
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+
+    padding: 12px 14px;
+    gap: 10px;
+  }
+
+  .subnav-inner::-webkit-scrollbar {
+    display: none;
+  }
+
+  .subnav-inner {
+    scrollbar-width: none;
+  }
+
+  /* =========================================================
+   Subnav - MOBILE only: 자동 줄바꿈 허용
+   (기본 스타일은 PC와 동일 유지)
+   ========================================================= */
+  @media (max-width: 991.98px) {
+
+    /* ✅ PC는 overflow hidden(스크롤 금지)인데,
+        모바일은 줄바꿈을 해야 하니 overflow를 풀어준다 */
+    .subnav-inner {
+      height: auto;
+      /* 여러 줄이 되면 높이 자동 */
+      overflow: visible;
+      /* hidden 해제 */
+      flex-wrap: wrap;
+      /* ✅ 자동 줄바꿈 */
+      justify-content: center;
+      /* PC처럼 가운데 정렬 유지 */
+      align-items: stretch;
+      row-gap: 10px;
+      /* 줄 간격 */
+      padding: 10px 12px;
+      /* 위아래 살짝 여백 */
+    }
+
+    /* ✅ 여러 줄일 때도 탭 높이/정렬 자연스럽게 */
+    .subnav-link {
+      height: 44px;
+      /* 모바일 터치 영역 확보 */
+    }
+  }
+
+  @media (max-width: 991.98px) {
+
+    /* sub-hero는 창 역할(잘라내기) */
+    .sub-hero {
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ✅ 이미지 패닝 변수 (기본은 중앙) */
+    .sub-hero {
+      --subhero-pan-x: 50%;
+      --subhero-pan-y: 50%;
+      --subhero-zoom: 1.15;
+      /* 살짝 크게 깔아두면 ‘창’ 느낌 확실 */
+    }
+
+    /* bg 레이어를 섹션보다 크게 깔고, 섹션이 잘라서 보여줌 */
+    .sub-hero-bg {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+
+      /* 배경은 cover 유지하되, 노출 위치를 변수로 제어 */
+      background-size: calc(100% * var(--subhero-zoom)) calc(100% * var(--subhero-zoom));
+      background-position: var(--subhero-pan-x) var(--subhero-pan-y);
+      background-repeat: no-repeat;
+    }
+
+    /* dim/inner가 위로 오도록(이미 되어있을 가능성 높지만 안전하게) */
+    .sub-hero-dim,
+    .sub-hero-inner {
+      position: relative;
+      z-index: 1;
+    }
+  }
+
+  .sub-hero {
+    --subhero-pan-y: 42%;
+    /* 예: 얼굴이 잘리면 위로 당김 */
+    --subhero-zoom: 1.25;
+  }
+
+  .sub-hero-dim {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, rgba(0, 0, 0, .58), rgba(0, 0, 0, .18) 60%, rgba(0, 0, 0, .18));
+  }
+
+  /* =========================================================
+   Subnav - MOBILE: 줄바꿈 OK + 활성 탭 영역(터치 타겟) 확장
+   ========================================================= */
+  @media (max-width: 991.98px) {
+
+    .subnav-inner {
+      height: auto;
+      overflow: visible;
+      flex-wrap: wrap;
+      justify-content: center;
+
+      row-gap: 12px;
+      padding: 12px 12px;
+    }
+
+    /* ✅ 모바일에서 탭 자체를 “두툼하게” */
+    .subnav-link {
+      height: 52px;
+      /* 활성 영역 체감 확대 */
+      padding: 0 12px;
+      /* 텍스트가 짧아도 박스가 작아보이지 않게 */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      /* PC와 느낌 동일하게 유지 */
+      font-size: var(--subtab-fs);
+    }
+
+    /* ✅ 모바일 터치 반응 개선(선택) */
+    .subnav-link {
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    /* =========================================================
+   Subnav - MOBILE: PC처럼 “한 줄 바” 유지 + 활성 블럭 꽉 채움
+   ========================================================= */
+    @media (max-width: 991.98px) {
+
+      /* ✅ 모바일에서도 바 높이를 고정해서 “블럭이 꽉 차는 느낌” 유지 */
+      :root {
+        --subtab-h: 64px;
+        /* 필요하면 72px로 올려도 됨 */
+      }
+
+      .subnav-inner {
+        height: var(--subtab-h);
+        flex-wrap: nowrap;
+        /* ✅ 줄바꿈 금지 (한 줄 유지) */
+        justify-content: flex-start;
+        /* 모바일은 좌측부터 */
+        overflow-x: auto;
+        /* ✅ 대신 가로 스와이프 */
+        overflow-y: hidden;
+
+        -webkit-overflow-scrolling: touch;
+        scroll-behavior: smooth;
+
+        /* 모바일에서는 약간 좌우 패딩이 있어야 예쁨 */
+        padding: 0 12px;
+      }
+
+      /* 스크롤바 숨김 */
+      .subnav-inner::-webkit-scrollbar {
+        display: none;
+      }
+
+      .subnav-inner {
+        scrollbar-width: none;
+      }
+
+      /* ✅ 링크가 바 높이를 ‘꽉’ 채우게 */
+      .subnav-link {
+        height: 100%;
+        flex: 0 0 var(--subtab-w);
+        /* PC와 동일하게 균일폭 유지 */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        /* PC처럼 “블럭형” 유지 */
+        border-radius: 0;
+      }
+    }
+
+    :root {
+      --subtab-h: 64px;
+      --subtab-w: 150px;
+      --subtab-fs: 14px;
+    }
+
+    .subnav {
+      background: rgba(30, 41, 59, .88);
+    }
+
+    .subnav-inner {
+      height: var(--subtab-h);
+      display: flex;
+      align-items: stretch;
+      flex-wrap: nowrap;
+
+      /* ✅ 메뉴 중앙 정렬 */
+      justify-content: center;
+
+      /* ✅ 기본은 스와이프(항목 많을 때) */
+      overflow-x: auto;
+      overflow-y: hidden;
+
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
+
+      gap: 0;
+      padding: 0 12px;
+    }
+
+    .subnav-inner::-webkit-scrollbar {
+      display: none;
+    }
+
+    .subnav-inner {
+      scrollbar-width: none;
+    }
+
+    /* ✅ 기본: 모든 탭이 동일 박스 */
+    .subnav-link {
+      flex: 0 0 var(--subtab-w);
+      height: 100%;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      padding: 0;
+      text-align: center;
+
+      font-weight: 900;
+      font-size: var(--subtab-fs);
+      letter-spacing: -0.1px;
+
+      color: rgba(255, 255, 255, .86);
+      background: transparent;
+
+      border-radius: 0;
+      transition: background .15s ease, color .15s ease;
+
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+
+      min-width: 0;
+    }
+
+    .subnav-link:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, .06);
+    }
+
+    .subnav-link.is-active {
+      background: #fff;
+      color: rgba(15, 23, 42, .92);
+    }
+
+    /* =======================================================
+     ✅ FIT 모드: 항목 수가 5개 이하이면 “한 줄에 전부”
+     - 스크롤 제거
+     - 각 탭 폭을 100%/N 로 자동 계산
+     ======================================================= */
+    .subnav.subnav-fit .subnav-inner {
+      overflow-x: hidden;
+    }
+
+    .subnav.subnav-fit .subnav-link {
+      flex: 0 0 calc(100% / var(--subtab-cols)) !important;
+    }
+
+    /* =======================================================
+   ✅ FIT 모드: 자동 폰트 스케일 (항목이 많을수록 폰트 조금 줄임)
+   - 3개: 큼
+   - 4개: 중간
+   - 5개: 조금 작게
+   ======================================================= */
+    .subnav.subnav-fit {
+      /* 기본 폰트(모바일) */
+      --subtab-fit-fs: 14px;
+    }
+
+    /* 탭 수 기반으로 자동 계산 */
+    .subnav.subnav-fit {
+      /* 5개면 12~13px 근처, 4개면 13~14px, 3개면 14~15px 정도 */
+      --subtab-fit-fs: clamp(12px, calc(16px - (var(--subtab-cols) * 0.7px)), 15px);
+    }
+
+    /* 적용 */
+    .subnav.subnav-fit .subnav-link {
+      font-size: var(--subtab-fit-fs) !important;
+    }
+
+    #topNav .mnav-panel-head {
+      display: none !important;
+    }
+  }
+
+  /* =========================================================
+   Calendar - 예약확인 버튼 모바일(아이콘 버튼) 최적화
+   ========================================================= */
+  @media (max-width: 991.98px) {
+
+    .cal-confirm {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+
+      height: 44px;
+      padding: 0 14px;
+
+      border-radius: 999px;
+      white-space: nowrap;
+      line-height: 1;
+      font-weight: 800;
+    }
+
+    /* ✅ 실제 아이콘 span까지 포함해서 크기/정렬 고정 */
+    .cal-confirm .cal-confirm-ico,
+    .cal-confirm svg,
+    .cal-confirm i,
+    .cal-confirm .ico,
+    .cal-confirm .icon {
+      width: 18px;
+      height: 18px;
+      flex: 0 0 18px;
+
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
+      font-size: 18px;
+      /* 📅 이모지 크기 고정 */
+      line-height: 1;
+    }
+  }
+
+  /* =========================================================
+   Calendar - MOBILE: 예약가능/예약종료를 2줄로 (예약↵가능)
+   + 파란/회색 박스 안에 딱 중앙정렬
+   ========================================================= */
+  @media (max-width: 991.98px) {
+
+    .cal-badge {
+      display: flex;
+      /* ✅ 2줄 정렬 위해 flex */
+      flex-direction: column;
+      /* ✅ 세로로 쌓기 */
+      align-items: center;
+      justify-content: center;
+
+      /* 박스 크기(원하는 느낌으로 조절 가능) */
+      min-height: 32px;
+      padding: 4px 6px;
+
+      border-radius: 0;
+      /* 기존 네 디자인이 각진 박스면 유지 */
+      line-height: 1.05;
+      font-weight: 800;
+      font-size: 12px;
+
+      .cal-badge {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center;
+        justify-content: center;
+
+        white-space: normal !important;
+        /* 혹시 nowrap 걸려있으면 해제 */
+        line-height: 1.05;
+        text-align: center;
+      }
+
+      .cal-badge-line {
+        display: block;
+      }
+
+      /* '예약가능'처럼 4글자면 보통 [예약][가능]으로 떨어짐.
+     혹시 단어가 1줄로 유지되면 max-width를 38px로 더 줄이면 됨. */
+    }
+  }

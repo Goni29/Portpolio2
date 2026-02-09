@@ -305,6 +305,9 @@
             return String(value || "").replace(/\D/g, "");
         }
 
+        const CUTOFF_HOUR = 17;
+        const CUTOFF_MIN = 0;
+
         function isPastTimeSlot(dateKey, timeStr) {
             if (!dateKey || !timeStr) return false;
             const today = new Date();
@@ -320,6 +323,17 @@
             return slotMinutes <= nowMinutes;
         }
 
+        function isAfterTodayCutoff(date) {
+            const today = new Date();
+            const todayKey = keyFromDateObj(today);
+            const dateKey = keyFromDateObj(date);
+            if (dateKey !== todayKey) return false;
+            const nowMinutes = (today.getHours() * 60) + today.getMinutes();
+            const cutoffMinutes = (CUTOFF_HOUR * 60) + CUTOFF_MIN;
+            return nowMinutes > cutoffMinutes;
+        }
+
+
         // ✅ 예약종료: (오늘 이전 날짜) OR 일요일 OR 공휴일
         function isClosed(date) {
             const dow = date.getDay(); // 0=일
@@ -334,7 +348,7 @@
 
             const isPast = d < today;
 
-            return isPast || (dow === 0) || holidaySet.has(key);
+            return isPast || (dow === 0) || holidaySet.has(key) || isAfterTodayCutoff(date);
         }
 
         // ---------------------------
@@ -637,6 +651,21 @@
         // ---------------------------
         let cur = new Date(2026, 1, 1); // 2026-02
 
+        let cutoffTimer = null;
+        function scheduleCutoffRerender() {
+            if (cutoffTimer) {
+                clearTimeout(cutoffTimer);
+                cutoffTimer = null;
+            }
+            const now = new Date();
+            const cutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate(), CUTOFF_HOUR, CUTOFF_MIN, 1, 0);
+            if (now >= cutoff) return;
+            const ms = cutoff - now;
+            cutoffTimer = setTimeout(() => {
+                render();
+            }, ms);
+        }
+
         function render() {
             const y = cur.getFullYear();
             const m = cur.getMonth();
@@ -709,6 +738,8 @@
 
             // 마지막 줄 채우기
             const cells = grid.children.length;
+            
+            scheduleCutoffRerender();
             const remainder = cells % 7;
             if (remainder !== 0) {
                 for (let i = 0; i < 7 - remainder; i++) {

@@ -1356,6 +1356,20 @@ body.page-sub .navbar .navbar-brand {
   align-items: start;
 }
 
+.staff-detail-right {
+  border: 1px solid var(--line);
+  background: #fff;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, .06);
+  padding: 22px 22px;
+  border-radius: 0;
+}
+
+.staff-detail-right .detail-head {
+  margin-bottom: 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
 .staff-detail-photo {
   border-radius: 32px;
   overflow: hidden;
@@ -1375,12 +1389,16 @@ body.page-sub .navbar .navbar-brand {
 }
 
 .detail-block {
-  padding: 18px 18px;
-  border-radius: 22px;
-  border: 1px solid var(--line);
-  background: #fff;
-  box-shadow: 0 14px 50px rgba(0, 0, 0, .05);
-  margin-bottom: 12px;
+  padding: 14px 0;
+  border-radius: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  margin-bottom: 0;
+}
+
+.detail-block + .detail-block {
+  border-top: 1px solid var(--line);
 }
 
 .detail-title {
@@ -2594,11 +2612,12 @@ header.sticky-top .navbar .nav-link {
 
 .address-map {
   border-radius: 0;
-  /* ✅ 레퍼런스처럼 깔끔하게: 라운드 제거 */
+  /* ??? ?? */
   overflow: hidden;
   background: #fff;
   border: 0;
-  /* ✅ 테두리/박스 제거 */
+  /* ??? ?? */
+  position: relative;
 }
 
 .address-map iframe {
@@ -2607,6 +2626,8 @@ header.sticky-top .navbar .nav-link {
   border: 0;
   display: block;
 }
+
+
 
 /* =========================================================
    Facility CTA - center + spacing (슬라이드와 거리 확보)
@@ -3515,11 +3536,13 @@ header.sticky-top .navbar .nav-link {
 /* 셀(컴팩트 높이) */
 .reserve-cal .cal-cell {
   min-height: 92px;
-  /* ✅ 컴팩트 */
+  /* ??? ?? */
   padding: 8px 8px 10px;
   border-right: 1px solid var(--cal-line);
   border-top: 1px solid var(--cal-line);
   background: #fff;
+  display: flex;
+  flex-direction: column;
   transition: background .12s ease, border-color .12s ease, transform .12s ease;
 }
 
@@ -3533,11 +3556,12 @@ header.sticky-top .navbar .nav-link {
 
 /* 상단(날짜/공휴일) */
 .reserve-cal .cal-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 8px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  column-gap: 6px;
+  row-gap: 4px;
+  margin-bottom: 6px;
 }
 
 .reserve-cal .cal-num {
@@ -3550,6 +3574,32 @@ header.sticky-top .navbar .nav-link {
   font-weight: 900;
   font-size: 11px;
   color: rgba(15, 23, 42, .50);
+  min-width: 0;
+  max-width: 3.2em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: right;
+  justify-self: end;
+}
+
+.reserve-cal .cal-hol:empty {
+  display: none;
+}
+
+/* iOS: prevent date/holiday overlap by stacking */
+@supports (-webkit-touch-callout: none) {
+  @media (max-width: 991.98px) {
+    .reserve-cal .cal-top {
+      grid-template-columns: 1fr;
+      row-gap: 4px;
+    }
+
+    .reserve-cal .cal-hol {
+      text-align: left;
+      justify-self: start;
+    }
+  }
 }
 
 /* 주말 색감 */
@@ -3579,6 +3629,8 @@ header.sticky-top .navbar .nav-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  margin-top: auto;
+  align-self: flex-start;
   height: 22px;
   /* ✅ 더 작게 */
   padding: 0 10px;
@@ -4469,6 +4521,10 @@ body.page-home header.sticky-top:not(.mega-open) .navbar.navbar-transparent:not(
       position: relative;
     }
 
+    header.sticky-top .navbar .container {
+      position: static !important;
+    }
+
     /* Bootstrap height 애니메이션 무력화(튐 원인 제거) */
     #topNav.collapsing {
       height: auto !important;
@@ -4483,10 +4539,10 @@ body.page-home header.sticky-top:not(.mega-open) .navbar.navbar-transparent:not(
 
     #topNav {
       position: absolute !important;
-      left: 50% !important;
-      right: auto !important;
-      width: 100vw;
-      margin-left: -50vw;
+      left: 0 !important;
+      right: 0 !important;
+      width: 100%;
+      margin-left: 0;
       top: 100% !important;
 
       background: rgba(255, 255, 255, .99) !important;
@@ -4675,8 +4731,20 @@ body.page-home header.sticky-top:not(.mega-open) .navbar.navbar-transparent:not(
       background: rgba(15, 23, 42, .04) !important;
     }
 
-    #mobileMegaPanel .mobile-mega-link:active {
-      background: rgba(15, 23, 42, .06) !important;
+    /* Touch devices: remove hover highlight */
+    @media (hover: none) {
+      #mobileMegaPanel .mobile-mega-link:hover {
+        background: transparent !important;
+      }
+    }
+
+    #mobileMegaPanel .mobile-mega-link:active,
+    #mobileMegaPanel .mobile-mega-link:focus,
+    #mobileMegaPanel .mobile-mega-link:focus-visible {
+      background: transparent !important;
+      outline: none !important;
+      box-shadow: none !important;
+      font-weight: 900;
     }
 
     /* ===== mobile auth ===== */
@@ -5760,9 +5828,8 @@ body.page-home header.sticky-top:not(.mega-open) .navbar.navbar-transparent:not(
     }
 
     .reserve-cal .cal-top {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 3px;
+      grid-template-columns: 1fr;
+      row-gap: 3px;
       margin-bottom: 6px;
     }
 
@@ -5772,8 +5839,13 @@ body.page-home header.sticky-top:not(.mega-open) .navbar.navbar-transparent:not(
 
     .reserve-cal .cal-hol {
       font-size: 10px;
-      white-space: normal;
+      max-width: 3.2em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
       line-height: 1.1;
+      text-align: right;
+      justify-self: end;
     }
 
     .reserve-cal .cal-badge {

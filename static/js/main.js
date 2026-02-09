@@ -211,6 +211,66 @@ function initTreat2() {
     if (Math.abs(e.pageX - startX) > 6) moved = true;
     viewport.scrollLeft = startScroll - walk;
   });
+
+  // Mobile: one-card-per-swipe
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let touchStartKey = null;
+  let touchStartT = 0;
+
+  const getActiveKey = () =>
+    tabWrap.querySelector(".treat2-tab.is-active")?.dataset.key ||
+    rail.querySelector(".treat2-card.is-active")?.dataset.key ||
+    cards[0]?.dataset.key;
+
+  const getIndexByKey = (key) => cards.findIndex((c) => c.dataset.key === key);
+
+  viewport.addEventListener(
+    "touchstart",
+    (e) => {
+      if (!isMobileLayout()) return;
+      if (e.touches.length !== 1) return;
+      const t = e.touches[0];
+      touchStartX = t.clientX;
+      touchStartY = t.clientY;
+      touchStartKey = getCenterKey() || getActiveKey();
+      touchStartT = performance.now();
+    },
+    { passive: true }
+  );
+
+  viewport.addEventListener(
+    "touchend",
+    (e) => {
+      if (!isMobileLayout()) return;
+      const t = e.changedTouches[0];
+      if (!t) return;
+      const dx = t.clientX - touchStartX;
+      const dy = t.clientY - touchStartY;
+      const absX = Math.abs(dx);
+      const absY = Math.abs(dy);
+      const dt = Math.max(1, performance.now() - touchStartT);
+      const v = absX / dt;
+
+      const isHorizontal = absX > absY * 1.1;
+      const isSwipe = absX >= 24 && isHorizontal;
+      const isFlick = dt <= 180 && v >= 0.35 && absX >= 10 && isHorizontal;
+      if (!isSwipe && !isFlick) return;
+
+      const baseKey = touchStartKey || getCenterKey() || getActiveKey();
+      const baseIdx = getIndexByKey(baseKey);
+      if (baseIdx < 0) return;
+
+      const dir = dx < 0 ? 1 : -1;
+      const targetIdx = clamp(baseIdx + dir, 0, cards.length - 1);
+      if (targetIdx === baseIdx) {
+        alignActive("smooth");
+        return;
+      }
+      animateSwitch(cards[targetIdx].dataset.key);
+    },
+    { passive: true }
+  );
 }
 
 /* ================================

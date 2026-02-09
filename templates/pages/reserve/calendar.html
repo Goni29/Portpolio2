@@ -298,7 +298,7 @@
 
         function holidayLabel(date) {
             const key = keyFromDateObj(date);
-            return holidayMap[key] || "";
+            return holidayMap[key] ? "공휴일" : "";
         }
 
         function normalizePhone(value) {

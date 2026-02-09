@@ -15,9 +15,33 @@ import requests
 from functools import wraps
 import secrets
 from urllib.parse import urlparse, urljoin
+from werkzeug.security import check_password_hash
 app = Flask(__name__)
 
-app.secret_key = os.getenv("SECRET_KEY") or secrets.token_urlsafe(32)
+SECRET_KEY_ENV = os.getenv("SECRET_KEY")
+
+# =========================
+# App security defaults (production-safe)
+# =========================
+APP_ENV = (os.getenv("APP_ENV") or os.getenv("FLASK_ENV") or "").lower()
+DEBUG = os.getenv("FLASK_DEBUG") == "1"
+IS_PROD = (APP_ENV != "development") and (not DEBUG)
+
+if IS_PROD and not SECRET_KEY_ENV:
+    raise RuntimeError("SECRET_KEY must be set in production")
+
+app.secret_key = SECRET_KEY_ENV or secrets.token_urlsafe(32)
+
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=IS_PROD,
+)
+
+# Trust proxy only when explicitly enabled (needed for correct client IP)
+if os.getenv("TRUST_PROXY") == "1":
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 
 
 
@@ -27,21 +51,43 @@ app.secret_key = os.getenv("SECRET_KEY") or secrets.token_urlsafe(32)
 
 # =========================
 
-ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "0000"
+ADMIN_USERNAME = (os.getenv("ADMIN_USERNAME") or "").strip()
+ADMIN_PASSWORD_HASH = (os.getenv("ADMIN_PASSWORD_HASH") or "").strip()
+ADMIN_ALLOWED_IPS = (os.getenv("ADMIN_ALLOWED_IPS") or "").strip()
+
+def admin_credentials_configured():
+    return bool(ADMIN_USERNAME and ADMIN_PASSWORD_HASH and ADMIN_ALLOWED_IPS)
+
+def _parse_allowed_ips(raw: str):
+    items = [i.strip() for i in re.split(r"[,\s]+", raw or "") if i.strip()]
+    nets = []
+    for item in items:
+        try:
+            if "/" in item:
+                nets.append(ipaddress.ip_network(item, strict=False))
+            else:
+                addr = ipaddress.ip_address(item)
+                nets.append(ipaddress.ip_network(f"{addr}/{addr.max_prefixlen}", strict=False))
+        except ValueError:
+            continue
+    return nets
+
+ADMIN_ALLOWED_NETWORKS = _parse_allowed_ips(ADMIN_ALLOWED_IPS)
 
 def is_admin():
 
     return session.get("is_admin") is True
 
 
-def is_local_request():
+def is_admin_ip_allowed():
+    if not ADMIN_ALLOWED_NETWORKS:
+        return False
     ip_str = request.remote_addr or ""
     try:
         ip = ipaddress.ip_address(ip_str)
     except ValueError:
         return False
-    return ip.is_loopback or ip.is_private or ip.is_link_local
+    return any(ip in net for net in ADMIN_ALLOWED_NETWORKS)
 
 
 
@@ -51,15 +97,16 @@ def admin_required(fn):
 
     def wrapper(*args, **kwargs):
 
-        if not is_local_request() or not is_admin():
+        if not is_admin_ip_allowed() or not is_admin():
 
-            flash("관리자 로그인이 필요합니다.", "danger")
+            flash("??? ???? ?????.", "danger")
 
             return redirect(url_for("login", next=request.path))
 
         return fn(*args, **kwargs)
 
     return wrapper
+
 # =========================
 # Security helpers
 # =========================
@@ -301,8 +348,6 @@ def inject_globals():
 
         "DEMO_USER": session.get("demo_user"),
 
-        "ADMIN_USERNAME": ADMIN_USERNAME,
-
         "csrf_token": _get_csrf_token()
 
     }
@@ -391,8 +436,8 @@ def login():
         u = (request.form.get("username") or request.form.get("email") or "").strip()
         p = (request.form.get("password") or "").strip()
 
-        # Admin login (local only)
-        if is_local_request() and u == ADMIN_USERNAME and p == ADMIN_PASSWORD:
+        # Admin login (explicitly enabled + local only)
+        if admin_credentials_configured() and is_admin_ip_allowed() and u == ADMIN_USERNAME and check_password_hash(ADMIN_PASSWORD_HASH, p):
             session["is_admin"] = True
             return redirect(next_url)
 
@@ -2189,5 +2234,5 @@ def community_delete(board, post_id):
 if __name__ == "__main__":
     debug = os.getenv("FLASK_DEBUG") == "1"
     host = os.getenv("FLASK_RUN_HOST", "0.0.0.0")
-    port = int(os.getenv("FLASK_RUN_PORT", "5000"))
+    port = int(os.getenv("PORT", os.getenv("FLASK_RUN_PORT", "5000")))
     app.run(host=host, port=port, debug=debug)

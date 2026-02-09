@@ -410,7 +410,7 @@ function initDoctorSlider() {
     let virtualIndex = index;
     let animToken = 0;
     let animating = false;
-    const SLIDE_MS = 200;
+    const SLIDE_MS = 320;
     const SNAP_TYPE = "x mandatory";
     const setSnap = (on) => {
       viewport.style.scrollSnapType = on ? SNAP_TYPE : "none";

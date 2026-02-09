@@ -93,6 +93,21 @@ body {
   overflow-x: hidden;
 }
 
+/* Avoid layout shift when Bootstrap toggles modal (scrollbar compensation) */
+html {
+  scrollbar-gutter: stable;
+}
+
+body.modal-open {
+  padding-right: 0 !important;
+}
+
+body.modal-open .sticky-top,
+body.modal-open .navbar,
+body.modal-open .nav-auth-dock {
+  padding-right: 0 !important;
+}
+
 body {
   color: var(--txt);
   /* ✅ 기본 텍스트는 항상 ink */

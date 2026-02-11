@@ -267,6 +267,11 @@
             "16:00", "16:30", "17:00"
         ];
 
+        const TIME_SLOTS_SAT = [
+            "10:00", "10:30", "11:00", "11:30",
+            "12:00", "12:30", "13:00"
+        ];
+
         // 선택값(예약신청용)
         let selectedDate = null; // "YYYY-MM-DD"
         let selectedTime = null; // "HH:MM"
@@ -278,6 +283,22 @@
         function pad(n) { return String(n).padStart(2, "0"); }
         function keyFromDateObj(date) {
             return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+        }
+        function getDowFromKey(key) {
+            if (!key) return -1;
+            const parts = String(key).split("-");
+            if (parts.length !== 3) return -1;
+            const y = Number(parts[0]);
+            const m = Number(parts[1]);
+            const d = Number(parts[2]);
+            if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return -1;
+            return new Date(y, m - 1, d).getDay();
+        }
+
+        function getTimeSlotsForDate(key) {
+            const dow = getDowFromKey(key);
+            if (dow === 6) return TIME_SLOTS_SAT;
+            return TIME_SLOTS;
         }
 
         async function loadHolidays(year) {
@@ -307,6 +328,8 @@
 
         const CUTOFF_HOUR = 17;
         const CUTOFF_MIN = 0;
+        const CUTOFF_HOUR_SAT = 13;
+        const CUTOFF_MIN_SAT = 0;
 
         function isPastTimeSlot(dateKey, timeStr) {
             if (!dateKey || !timeStr) return false;
@@ -329,7 +352,10 @@
             const dateKey = keyFromDateObj(date);
             if (dateKey !== todayKey) return false;
             const nowMinutes = (today.getHours() * 60) + today.getMinutes();
-            const cutoffMinutes = (CUTOFF_HOUR * 60) + CUTOFF_MIN;
+            const dow = date.getDay();
+            const cutoffH = dow === 6 ? CUTOFF_HOUR_SAT : CUTOFF_HOUR;
+            const cutoffM = dow === 6 ? CUTOFF_MIN_SAT : CUTOFF_MIN;
+            const cutoffMinutes = (cutoffH * 60) + cutoffM;
             return nowMinutes > cutoffMinutes;
         }
 
@@ -378,7 +404,8 @@
 
             if (timeSelect) {
                 timeSelect.innerHTML = `<option value="">예약 시간을 선택해주세요.</option>`;
-                TIME_SLOTS.forEach(t => {
+                const slots = getTimeSlotsForDate(selectedDate);
+                slots.forEach(t => {
                     const opt = document.createElement("option");
                     opt.value = t;
                     opt.textContent = t;

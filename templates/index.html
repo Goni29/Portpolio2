@@ -49,7 +49,16 @@
       <button class="btn hero-nav" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">›</button>
     </div>
   </div>
+
 </section>
+<div class="hero-scroll-hint" aria-hidden="true">
+  <span class="hero-scroll-icon">
+    <span class="hero-scroll-dot"></span>
+  </span>
+  <span class="hero-scroll-text">SCROLL</span>
+</div>
+
+
 
 
 <!-- 한 줄 카피 -->
@@ -370,5 +379,10 @@
   </div>
 </section>
 
+
+
+<button class="fab-top" id="fabTop" type="button" aria-label="Back to top">
+  <span class="fab-top-ico" aria-hidden="true">TOP</span>
+</button>
 <script src="{{ url_for('static', filename='js/main.js') }}" defer></script>
 {% endblock %}

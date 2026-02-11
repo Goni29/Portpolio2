@@ -94,6 +94,38 @@ body {
   overscroll-behavior-y: none;
 }
 
+/* UA scroll fixes (KakaoTalk in-app) */
+html.ua-kakao,
+html.ua-kakao body {
+  overscroll-behavior-y: auto !important;
+}
+
+html.ua-kakao body {
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+html.ua-kakao body .reserve-cal {
+  touch-action: pan-y;
+}
+
+html.ua-android,
+html.ua-android body {
+  overscroll-behavior-y: auto;
+}
+
+/* Desktop: avoid scroll lock bleed */
+@media (min-width: 992px) {
+  html,
+  body {
+    overscroll-behavior-y: auto;
+  }
+
+  body.nav-lock {
+    overflow-y: auto !important;
+  }
+}
+
 /* Avoid layout shift when Bootstrap toggles modal (scrollbar compensation) */
 html {
   scrollbar-gutter: stable;
@@ -283,6 +315,41 @@ body.page-sub .navbar .navbar-brand {
   font-weight: 800;
 }
 
+/* Back-to-top (Android only on home, mobile) */
+.fab-top {
+  position: fixed;
+  right: 16px;
+  bottom: 18px;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 0;
+  background: rgba(15, 23, 42, .86);
+  color: #fff;
+  display: none;
+  place-items: center;
+  font-weight: 900;
+  font-size: 12px;
+  z-index: 1055;
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition: opacity .2s ease, transform .2s ease;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, .22);
+}
+
+.fab-top.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+@media (max-width: 991.98px) {
+  html.ua-android body.page-home .fab-top {
+    display: grid;
+  }
+}
+
 /* =========================================================
    HERO
    ========================================================= */
@@ -292,6 +359,7 @@ body.page-sub .navbar .navbar-brand {
   margin-right: calc(50% - 50vw);
   padding: 0;
   padding-bottom: clamp(36px, 4vw, 72px);
+  position: relative;
 }
 
 .hero-wrap>.container,
@@ -460,6 +528,74 @@ body.page-sub .navbar .navbar-brand {
 
 .hero-indicators button.active {
   background: var(--on-dark-92);
+}
+
+/* Hero scroll hint */
+.hero-scroll-hint {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .24em;
+  color: rgba(var(--ink-rgb), .62);
+  text-transform: uppercase;
+  opacity: 1;
+  pointer-events: none;
+  margin: 10px auto 22px;
+  transition: opacity .22s ease, transform .22s ease;
+}
+
+.hero-scroll-hint.is-hidden {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.hero-scroll-icon {
+  width: 22px;
+  height: 34px;
+  border: 1.5px solid rgba(var(--ink-rgb), .38);
+  border-radius: 999px;
+  position: relative;
+}
+
+.hero-scroll-dot {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(var(--ink-rgb), .7);
+  transform: translateX(-50%);
+  animation: heroScrollDot 1.6s ease-in-out infinite;
+}
+
+@keyframes heroScrollDot {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 0);
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, 12px);
+  }
+}
+
+@media (max-width: 991.98px) {
+  .hero-scroll-hint {
+    display: flex;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-scroll-dot {
+    animation: none;
+  }
 }
 
 @media (max-width: 992px) {
@@ -881,7 +1017,9 @@ body.page-sub .navbar .navbar-brand {
 .doctor3-slide img {
   width: 100%;
   height: 100%;
-  display: block;
+  display: flex;
+      align-items: center;
+      min-height: 48px;
   object-fit: cover;
   object-position: center;
 }
@@ -2321,8 +2459,9 @@ header.sticky-top .navbar .nav-link {
 
 .treat-overlap-bg img {
   width: 100%;
-  height: clamp(280px, 32vw, 380px);
-  object-fit: cover;
+  height: clamp(280px, 32vw, 420px);
+  object-fit: contain;
+  background: #fff;
   display: block;
   filter: saturate(.98) contrast(.98);
 }
@@ -2409,7 +2548,7 @@ header.sticky-top .navbar .nav-link {
   left: 0;
   right: 0;
   bottom: 0;
-  padding: 18px 18px;
+  padding: 18px 18px 44px;
   background: linear-gradient(180deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, .55));
   color: #fff;
 }
@@ -2432,6 +2571,12 @@ header.sticky-top .navbar .nav-link {
   width: 26px;
   height: 4px;
   border-radius: 999px;
+}
+
+.facility-carousel .carousel-indicators {
+  margin-bottom: 0;
+  bottom: 12px;
+  z-index: 3;
 }
 
 .facility-carousel .carousel-control-prev,
@@ -2461,6 +2606,14 @@ header.sticky-top .navbar .nav-link {
   .facility-carousel .carousel-control-prev,
   .facility-carousel .carousel-control-next {
     width: 18%;
+  }
+
+  .facility-cap {
+    padding-bottom: 36px;
+  }
+
+  .facility-carousel .carousel-indicators {
+    bottom: 10px;
   }
 }
 
@@ -4685,6 +4838,9 @@ body.page-home header.sticky-top:not(.mega-open) .navbar.navbar-transparent:not(
       color: #0f172a !important;
 
       padding: 14px 10px !important;
+      display: flex !important;
+      align-items: center;
+      min-height: 48px;
       width: 100%;
       text-align: left !important;
 
@@ -4779,14 +4935,15 @@ body.page-home header.sticky-top:not(.mega-open) .navbar.navbar-transparent:not(
     }
 
     #topNav .mobile-auth a {
-      display: block;
+      display: flex;
+      align-items: center;
+      min-height: 48px;
       padding: 12px 10px !important;
       font-weight: 700 !important;
       color: #0f172a !important;
       text-decoration: none !important;
       background: transparent !important;
     }
-
     /* ===== body scroll lock ===== */
     body.nav-lock {
       left: 0;

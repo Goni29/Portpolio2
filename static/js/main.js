@@ -28,6 +28,21 @@
 })();
 
 /* ================================
+   UA flags (Android/Kakao)
+   ================================ */
+function initUserAgentFlags() {
+  if (window.__uaFlagsInit) return;
+  window.__uaFlagsInit = true;
+  const ua = navigator.userAgent || "";
+  if (/KAKAOTALK|KAKAO|DaumApps/i.test(ua)) {
+    document.documentElement.classList.add("ua-kakao");
+  }
+  if (/Android/i.test(ua)) {
+    document.documentElement.classList.add("ua-android");
+  }
+}
+
+/* ================================
    Treat2 (치료 탭 + 카드 레일)
    ================================ */
 function initTreat2() {
@@ -369,6 +384,49 @@ function initHeroIndicators() {
       return st.display !== "none" && st.visibility !== "hidden" && Number(st.opacity || 1) > 0.2;
     });
     setDot(visibleIdx >= 0 ? visibleIdx : 0);
+  });
+}
+
+/* ================================
+   HERO scroll hint (HOME only)
+   ================================ */
+function initHeroScrollHint() {
+  if (!document.body.classList.contains("page-home")) return;
+  const hint = document.querySelector(".hero-scroll-hint");
+  if (!hint || hint.__hintInit) return;
+  hint.__hintInit = true;
+
+  const update = () => {
+    const y = window.scrollY || window.pageYOffset || 0;
+    hint.classList.toggle("is-hidden", y > 40);
+  };
+
+  const onScroll = window.__PH?.rafThrottle ? window.__PH.rafThrottle(update) : update;
+  update();
+  window.addEventListener("scroll", onScroll, { passive: true });
+}
+
+/* ================================
+   Back-to-top (HOME, Android only)
+   ================================ */
+function initHomeBackToTop() {
+  if (!document.body.classList.contains("page-home")) return;
+  const btn = document.getElementById("fabTop");
+  if (!btn || btn.__fabInit) return;
+  btn.__fabInit = true;
+
+  const update = () => {
+    const y = window.scrollY || window.pageYOffset || 0;
+    btn.classList.toggle("is-visible", y > 240);
+  };
+
+  const onScroll = window.__PH?.rafThrottle ? window.__PH.rafThrottle(update) : update;
+  update();
+  window.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("resize", onScroll, { passive: true });
+
+  btn.addEventListener("click", () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
   });
 }
 
@@ -1221,16 +1279,111 @@ function initMegaMenu() {
 }
 
 /* ================================
+   Scroll safety (desktop unlock)
+   ================================ */
+function initScrollSafety() {
+  if (window.__scrollSafetyInit) return;
+  window.__scrollSafetyInit = true;
+  const mq = window.matchMedia("(max-width: 991.98px)");
+
+  const unlockDesktop = () => {
+    if (mq.matches) return;
+    if (document.body.classList.contains("nav-lock")) {
+      document.body.classList.remove("nav-lock");
+    }
+    document.body.__mnavScrollLocked = false;
+    if (document.documentElement.style.overscrollBehavior) {
+      document.documentElement.style.overscrollBehavior = "";
+    }
+  };
+
+  const ensureScrollable = () => {
+    if (mq.matches) return;
+    if (document.body.classList.contains("modal-open")) return;
+    if (document.body.classList.contains("nav-lock")) return;
+    const style = getComputedStyle(document.body);
+    if (style.overflowY === "hidden" || style.overflow === "hidden") {
+      document.body.style.overflowY = "auto";
+    }
+  };
+
+  const ensureMobileUnlock = () => {
+    if (!mq.matches) return;
+    const topNav = document.getElementById("topNav");
+    const navOpen =
+      topNav &&
+      (topNav.classList.contains("show") ||
+        topNav.classList.contains("mnav-nav-closing") ||
+        topNav.classList.contains("mnav-nav-closing-run"));
+    const modalOpen = !!document.querySelector(".modal.show");
+    if (!navOpen && !modalOpen) {
+      document.body.classList.remove("nav-lock");
+      document.body.__mnavScrollLocked = false;
+      if (document.documentElement.style.overscrollBehavior) {
+        document.documentElement.style.overscrollBehavior = "";
+      }
+    }
+  };
+
+  unlockDesktop();
+  ensureScrollable();
+
+  mq.addEventListener?.("change", () => {
+    unlockDesktop();
+    ensureScrollable();
+    ensureMobileUnlock();
+  });
+
+  window.addEventListener(
+    "resize",
+    () => {
+      unlockDesktop();
+      ensureScrollable();
+      ensureMobileUnlock();
+    },
+    { passive: true }
+  );
+
+  window.addEventListener("orientationchange", ensureMobileUnlock, { passive: true });
+  window.addEventListener("touchstart", ensureMobileUnlock, { passive: true });
+
+  ensureMobileUnlock();
+}
+
+/* ================================
+   Modal scroll unlock (Bootstrap)
+   ================================ */
+function initModalScrollFix() {
+  if (window.__modalScrollFixInit) return;
+  window.__modalScrollFixInit = true;
+
+  const cleanup = () => {
+    if (document.querySelector(".modal.show")) return;
+    document.body.classList.remove("modal-open");
+    document.body.style.removeProperty("overflow");
+    document.body.style.removeProperty("padding-right");
+  };
+
+  document.addEventListener("hidden.bs.modal", cleanup);
+  cleanup();
+}
+
+/* ================================
    Boot
    ================================ */
 document.addEventListener("DOMContentLoaded", () => {
+  initUserAgentFlags();
   initTreat2();
   initHeroIndicators();
+  initHeroScrollHint();
+  initHomeBackToTop();
   initDoctorSlider();
   initScrollReveal();
   initTabsFadeReplay();
   initNavbarHomeTransparent();
   initMegaMenu();
+  initScrollSafety();
+  initModalScrollFix();
 });
 
 /* =========================================================
@@ -1248,6 +1401,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const mq = window.matchMedia("(max-width: 991.98px)");
   const isMobile = () => mq.matches;
+  const ua = navigator.userAgent || "";
+  const isKakao = () => /KAKAOTALK|KAKAO|DaumApps/i.test(ua);
+  const isAndroidChrome = () => /Android/i.test(ua) && /Chrome/i.test(ua);
 
   const ready = (fn) => {
     if (document.readyState === "loading") {
@@ -1273,6 +1429,8 @@ document.addEventListener("DOMContentLoaded", () => {
       topNav.querySelectorAll('.nav-mega-link[data-mobile-acc-btn="1"][data-mega-key]')
     );
     if (!triggers.length) return;
+
+    const navList = topNav.querySelector(".navbar-nav");
 
     if (topNav.__mnavFinalBound) return;
     topNav.__mnavFinalBound = true;
@@ -1343,8 +1501,6 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     applyToggleMode();
-    mq.addEventListener?.("change", applyToggleMode);
-    window.addEventListener("resize", applyToggleMode, { passive: true });
 
     /* ---------------------------------------------------------
        2) 하위메뉴 캐시
@@ -1370,6 +1526,25 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     const setEmpty = (on) => topNav.classList.toggle("mnav-empty", on);
+
+    const pickTriggerByY = (clientY) => {
+      if (!navList) return null;
+      let best = null;
+      let bestDist = Infinity;
+      for (const t of triggers) {
+        const r = t.getBoundingClientRect();
+        if (clientY >= r.top && clientY <= r.bottom) return t;
+        const center = (r.top + r.bottom) / 2;
+        const dist = Math.abs(clientY - center);
+        if (dist < bestDist) {
+          bestDist = dist;
+          best = t;
+        }
+      }
+      const listRect = navList.getBoundingClientRect();
+      if (clientY < listRect.top || clientY > listRect.bottom) return null;
+      return best;
+    };
 
     /* ---------------------------------------------------------
        3) 햄버거 open/close
@@ -1441,6 +1616,21 @@ document.addEventListener("DOMContentLoaded", () => {
       );
     }
 
+    if (!topNav.__mnavDocCloseBound) {
+      topNav.__mnavDocCloseBound = true;
+      const docClose = (e) => {
+        if (!isMobile()) return;
+        if (!topNav.classList.contains("show")) return;
+        const target = e.target;
+        if (!target) return;
+        if (target.closest("#topNav")) return;
+        if (target.closest(".navbar-toggler")) return;
+        closeHamburger();
+      };
+      document.addEventListener("click", docClose, true);
+      document.addEventListener("touchstart", docClose, { passive: true, capture: true });
+    }
+
     /* ---------------------------------------------------------
        4) 오른쪽 패널(하위메뉴) 열기/스위칭/닫기
        --------------------------------------------------------- */
@@ -1451,6 +1641,40 @@ document.addEventListener("DOMContentLoaded", () => {
       switching = on;
       topNav.classList.toggle("nav-switching", on);
     };
+
+    const resetForDesktop = () => {
+      if (isMobile()) return;
+      topNav.classList.remove(
+        "mnav-has-open",
+        "mnav-closing",
+        "mnav-opening",
+        "nav-switching",
+        "mnav-switching-out",
+        "mnav-switching-in",
+        "mnav-nav-closing",
+        "mnav-nav-closing-run"
+      );
+      resetLeft();
+      setSwitching(false);
+      head.textContent = "";
+      body.replaceChildren();
+      setEmpty(true);
+      topNav.__navClosing = false;
+      document.body.classList.remove("nav-lock");
+      document.body.__mnavScrollLocked = false;
+      document.documentElement.style.overscrollBehavior = "";
+      if (topNav.classList.contains("show")) inst.hide();
+    };
+
+    const handleToggleChange = () => {
+      applyToggleMode();
+      resetForDesktop();
+    };
+
+    mq.addEventListener?.("change", handleToggleChange);
+    window.addEventListener("resize", handleToggleChange, { passive: true });
+
+    resetForDesktop();
 
     const playOpenAnim = (onlyPanel = false) => {
       topNav.classList.add("mnav-has-open");
@@ -1532,8 +1756,13 @@ document.addEventListener("DOMContentLoaded", () => {
       (e) => {
         if (!isMobile()) return;
 
-        const t = e.target.closest('.nav-mega-link[data-mobile-acc-btn="1"][data-mega-key]');
-        if (!t) return;
+        let t = e.target.closest('.nav-mega-link[data-mobile-acc-btn="1"][data-mega-key]');
+        if (!t) {
+          if (!topNav.classList.contains("show") || !topNav.classList.contains("mnav-empty")) return;
+          if (e.target.closest("a, button, input, select, textarea, label")) return;
+          t = pickTriggerByY(e.clientY);
+          if (!t) return;
+        }
 
         e.preventDefault();
         e.stopPropagation();
@@ -1567,7 +1796,6 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!isMobile()) return;
 
       setEmpty(true);
-
       topNav.classList.remove("mnav-nav-closing", "mnav-nav-closing-run");
       topNav.classList.remove("mnav-opening");
       void topNav.offsetWidth;
@@ -1579,7 +1807,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     topNav.addEventListener("hidden.bs.collapse", () => {
       window.clearTimeout(closeTimer);
-
       topNav.classList.remove(
         "mnav-has-open",
         "mnav-closing",
@@ -1666,6 +1893,7 @@ document.addEventListener("DOMContentLoaded", () => {
     "touchstart",
     (e) => {
       if (!isMobile()) return;
+      if (isKakao() || isAndroidChrome()) return;
       if (e.touches.length !== 1) return;
       const t = e.touches[0];
       startX = t.clientX;
@@ -1679,6 +1907,7 @@ document.addEventListener("DOMContentLoaded", () => {
     "touchmove",
     (e) => {
       if (!tracking || !isMobile()) return;
+      if (isKakao() || isAndroidChrome()) return;
       if (e.touches.length !== 1) return;
       const t = e.touches[0];
       const dx = t.clientX - startX;

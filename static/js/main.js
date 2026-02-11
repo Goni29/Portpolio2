@@ -1860,6 +1860,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const header = document.querySelector("header.sticky-top");
     if (!header) return;
 
+    const pos = window.getComputedStyle(header).position;
+    if (pos !== "fixed") {
+      body.style.removeProperty("padding-top");
+      return;
+    }
+
     const h = Math.ceil(header.getBoundingClientRect().height || 64);
 
     // ✅ CSS !important를 이기도록 important로 지정
@@ -1887,60 +1893,3 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 })();
 
-/* ================================
-   Mobile overscroll (top pull-down) lock
-   ================================ */
-(() => {
-  "use strict";
-
-  const mq = window.matchMedia("(max-width: 991.98px)");
-  const isMobile = () => mq.matches;
-
-  let tracking = false;
-  let startX = 0;
-  let startY = 0;
-
-  document.addEventListener(
-    "touchstart",
-    (e) => {
-      if (!isMobile()) return;
-      if (isKakao() || isAndroidChrome()) return;
-      if (e.touches.length !== 1) return;
-      const t = e.touches[0];
-      startX = t.clientX;
-      startY = t.clientY;
-      tracking = true;
-    },
-    { passive: true }
-  );
-
-  document.addEventListener(
-    "touchmove",
-    (e) => {
-      if (!tracking || !isMobile()) return;
-      if (isKakao() || isAndroidChrome()) return;
-      if (e.touches.length !== 1) return;
-      const t = e.touches[0];
-      const dx = t.clientX - startX;
-      const dy = t.clientY - startY;
-
-      // 가로 스와이프는 방해하지 않음
-      if (Math.abs(dx) > Math.abs(dy)) return;
-
-      // 최상단에서 위로 "당기는" 경우만 차단
-      if (dy <= 0) return;
-      const scrollY = window.scrollY || window.pageYOffset || 0;
-      if (scrollY > 0) return;
-
-      e.preventDefault();
-    },
-    { passive: false }
-  );
-
-  const endTrack = () => {
-    tracking = false;
-  };
-
-  document.addEventListener("touchend", endTrack, { passive: true });
-  document.addEventListener("touchcancel", endTrack, { passive: true });
-})();

@@ -94,6 +94,14 @@ body {
   overscroll-behavior-y: none;
 }
 
+/* Mobile: allow top overscroll (iOS/Android/Kakao) */
+@media (max-width: 991.98px) {
+  html,
+  body {
+    overscroll-behavior-y: auto;
+  }
+}
+
 /* UA scroll fixes (KakaoTalk in-app) */
 html.ua-kakao,
 html.ua-kakao body {
@@ -4659,10 +4667,8 @@ body.page-home header.sticky-top:not(.mega-open) .navbar.navbar-transparent:not(
     }
 
     body.page-sub header.sticky-top {
-      position: fixed !important;
+      position: sticky !important;
       top: 0;
-      left: 0;
-      right: 0;
       z-index: 1050;
     }
 
@@ -4680,6 +4686,14 @@ body.page-home header.sticky-top:not(.mega-open) .navbar.navbar-transparent:not(
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       z-index: 1050;
+    }
+
+    /* Mobile: allow navbar to move with overscroll on HOME */
+    body.page-home .navbar.navbar-transparent {
+      position: sticky;
+      top: 0;
+      left: auto;
+      right: auto;
     }
 
     header.sticky-top .navbar.navbar-transparent .navbar-brand,

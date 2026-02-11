@@ -1529,9 +1529,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const pickTriggerByY = (clientY) => {
       if (!navList) return null;
+      const rows = [...triggers];
+      const reserve = navList.querySelector(".nav-reserve");
+      if (reserve) rows.push(reserve);
+      navList.querySelectorAll(".mobile-auth a").forEach((a) => rows.push(a));
+
       let best = null;
       let bestDist = Infinity;
-      for (const t of triggers) {
+      for (const t of rows) {
         const r = t.getBoundingClientRect();
         if (clientY >= r.top && clientY <= r.bottom) return t;
         const center = (r.top + r.bottom) / 2;
@@ -1760,8 +1765,14 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!t) {
           if (!topNav.classList.contains("show") || !topNav.classList.contains("mnav-empty")) return;
           if (e.target.closest("a, button, input, select, textarea, label")) return;
-          t = pickTriggerByY(e.clientY);
-          if (!t) return;
+          const picked = pickTriggerByY(e.clientY);
+          if (!picked) return;
+          if (!picked.classList.contains("nav-mega-link")) {
+            picked.click();
+            closeHamburger();
+            return;
+          }
+          t = picked;
         }
 
         e.preventDefault();

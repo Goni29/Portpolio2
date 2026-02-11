@@ -2460,7 +2460,7 @@ header.sticky-top .navbar .nav-link {
 .treat-overlap-bg img {
   width: 100%;
   height: clamp(280px, 32vw, 420px);
-  object-fit: contain;
+  object-fit: cover;
   background: #fff;
   display: block;
   filter: saturate(.98) contrast(.98);
@@ -2506,11 +2506,15 @@ header.sticky-top .navbar .nav-link {
 @media (max-width: 992px) {
   .treat-overlap-bg img {
     height: 220px;
+    object-fit: cover;
+    object-position: 50% 50%;
+    background: #fff;
   }
 
   .treat-overlap-card {
-    margin-top: -56px;
+    margin-top: 14px;
     border-radius: 22px;
+    background: #fff;
   }
 
   .treat-overlap-card-title {

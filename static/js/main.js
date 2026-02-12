@@ -1184,40 +1184,104 @@ function initNavbarBounceSync() {
   const nav = document.querySelector(".navbar.navbar-transparent");
   if (!header) return;
 
-  const vv = window.visualViewport;
-  const isIOS = document.documentElement.classList.contains("ua-ios");
+  const root = document.documentElement;
+  const scroller = document.scrollingElement || root;
+  const vv = window.visualViewport || null;
+  const isIOS = root.classList.contains("ua-ios");
   const navIsFixed = !!nav && window.getComputedStyle(nav).position === "fixed";
   const target = navIsFixed ? nav : header;
+  window.__PH = window.__PH || {};
 
-  if (!isIOS || !vv) {
+  let prevTop = -1;
+  let prevBottom = -1;
+  let prevActive = null;
+  let applyRAF = null;
+  const EPS = 1.5;
+
+  const publishRubber = (topPull, bottomPull) => {
+    const top = Math.max(0, Math.round(topPull || 0));
+    const bottom = Math.max(0, Math.round(bottomPull || 0));
+    const active = top > 0 || bottom > 0;
+
+    if (active === prevActive && top === prevTop && bottom === prevBottom) return;
+    prevActive = active;
+    prevTop = top;
+    prevBottom = bottom;
+
+    root.classList.toggle("ios-rubber-band", active);
+    root.style.setProperty("--ios-rubber-top", `${top}px`);
+    root.style.setProperty("--ios-rubber-bottom", `${bottom}px`);
+
+    window.__PH.iosRubberBanding = { active, top, bottom };
+    window.dispatchEvent(
+      new CustomEvent("ph:ios-rubberband", {
+        detail: { active, top, bottom }
+      })
+    );
+  };
+
+  const clearOffset = () => {
     target.style.removeProperty("top");
+    root.style.setProperty("--vv-top-offset", "0px");
+    publishRubber(0, 0);
+  };
+
+  if (!isIOS) {
+    clearOffset();
     return;
   }
 
-  let raf = null;
-  const getViewportTop = () => {
-    const offsetTop = Math.max(0, Math.round(vv.offsetTop || 0));
-    const pageTop = typeof vv.pageTop === "number" ? vv.pageTop : 0;
-    const pullDown = pageTop < 0 ? Math.round(Math.abs(pageTop)) : 0;
-    return offsetTop + pullDown;
+  const measure = () => {
+    const rect = scroller.getBoundingClientRect();
+    const viewportH = Math.round(window.innerHeight || root.clientHeight || 0);
+
+    const vvOffsetTop = vv ? Math.max(0, Math.round(vv.offsetTop || 0)) : 0;
+    const vvPageTop = vv && typeof vv.pageTop === "number" ? vv.pageTop : 0;
+    const vvTopPull = vvPageTop < -EPS ? Math.round(Math.abs(vvPageTop)) : 0;
+
+    const docTopPull = rect.top > EPS ? Math.round(rect.top) : 0;
+    const docBottomPull =
+      viewportH > 0 && rect.bottom < viewportH - EPS
+        ? Math.round(viewportH - rect.bottom)
+        : 0;
+
+    return {
+      topOffset: Math.max(vvOffsetTop, vvTopPull, docTopPull),
+      bottomPull: Math.max(0, docBottomPull)
+    };
   };
 
-  const sync = () => {
-    raf = null;
-    target.style.top = `${getViewportTop()}px`;
+  const apply = () => {
+    applyRAF = null;
+    const { topOffset, bottomPull } = measure();
+    target.style.top = `${topOffset}px`;
+    root.style.setProperty("--vv-top-offset", `${topOffset}px`);
+    publishRubber(topOffset, bottomPull);
   };
 
-  const onTick = () => {
-    if (raf) return;
-    raf = requestAnimationFrame(sync);
+  const queueApply = () => {
+    if (applyRAF) return;
+    applyRAF = requestAnimationFrame(apply);
   };
 
-  sync();
-  window.addEventListener("scroll", onTick, { passive: true });
-  window.addEventListener("resize", onTick, { passive: true });
-  window.addEventListener("orientationchange", onTick, { passive: true });
-  vv.addEventListener("scroll", onTick, { passive: true });
-  vv.addEventListener("resize", onTick, { passive: true });
+  const tick = () => {
+    if (!document.hidden) {
+      queueApply();
+    }
+    requestAnimationFrame(tick);
+  };
+
+  apply();
+  tick();
+  window.addEventListener("scroll", queueApply, { passive: true });
+  window.addEventListener("resize", queueApply, { passive: true });
+  window.addEventListener("orientationchange", queueApply, { passive: true });
+  window.addEventListener("pageshow", queueApply, { passive: true });
+  document.addEventListener("visibilitychange", queueApply, { passive: true });
+  if (vv) {
+    vv.addEventListener("scroll", queueApply, { passive: true });
+    vv.addEventListener("resize", queueApply, { passive: true });
+  }
 }
 
 /* ================================
@@ -1239,6 +1303,20 @@ function initMegaMenu() {
   if (!header || !navEl || !navWrap || !mega || !rail || !links.length || !cols.length) return;
 
   const MQ = window.matchMedia("(min-width: 992px)");
+  const vv = window.visualViewport;
+  const isIOS = document.documentElement.classList.contains("ua-ios");
+  const isRubberBanding = () => !!window.__PH?.iosRubberBanding?.active;
+  const isViewportShifted = () => {
+    if (!isIOS || !vv) return false;
+    const offsetTop = Math.max(0, Number(vv.offsetTop || 0));
+    const pageTop = typeof vv.pageTop === "number" ? vv.pageTop : 0;
+    return offsetTop > 1 || pageTop < -1;
+  };
+  let lastViewportMotion = 0;
+  const markViewportMotion = () => {
+    lastViewportMotion = performance.now();
+  };
+  const isViewportSettling = () => performance.now() - lastViewportMotion < 180;
 
   const setNavH = () => {
     // desktop에서만 의미 있음
@@ -1289,16 +1367,31 @@ function initMegaMenu() {
 
   // 열림/닫힘 (hover)
   let t = null;
+  const clearCloseTimer = () => {
+    if (!t) return;
+    clearTimeout(t);
+    t = null;
+  };
 
   const open = () => {
     if (!MQ.matches) return;
-    if (t) { clearTimeout(t); t = null; }
+    if (isIOS && isRubberBanding()) return;
+    clearCloseTimer();
     header.classList.add("mega-open");
     syncLayoutRAF();
   };
 
   const close = () => {
     if (!MQ.matches) return;
+    if (isIOS && isViewportSettling()) {
+      clearCloseTimer();
+      return;
+    }
+    if (isIOS && (isViewportShifted() || isRubberBanding())) {
+      clearCloseTimer();
+      return;
+    }
+    clearCloseTimer();
     t = setTimeout(() => header.classList.remove("mega-open"), 90);
   };
 
@@ -1306,6 +1399,22 @@ function initMegaMenu() {
   mega.addEventListener("mouseenter", open);
   navWrap.addEventListener("mouseleave", close);
   mega.addEventListener("mouseleave", close);
+  if (isIOS) {
+    window.addEventListener("scroll", markViewportMotion, { passive: true });
+    window.addEventListener("resize", markViewportMotion, { passive: true });
+    if (vv) {
+      vv.addEventListener("scroll", markViewportMotion, { passive: true });
+      vv.addEventListener("resize", markViewportMotion, { passive: true });
+    }
+
+    window.addEventListener("ph:ios-rubberband", (e) => {
+      if (!MQ.matches) return;
+      if (!header.classList.contains("mega-open")) return;
+      if (e?.detail?.active) {
+        clearCloseTimer();
+      }
+    });
+  }
 
   // href="#" 튐 방지(Desktop/ Mobile 상관없이 안전)
   links.forEach((a) => a.addEventListener("click", (e) => e.preventDefault()));

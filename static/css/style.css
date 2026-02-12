@@ -14,6 +14,9 @@
   --muted: #64748b;
   --soft: #f3f5f8;
   --radius: 32px;
+  --vv-top-offset: 0px;
+  --ios-rubber-top: 0px;
+  --ios-rubber-bottom: 0px;
 
   /* Section spacing (기본: 서브페이지 타이트) */
   --sec-y: clamp(70px, 6vw, 110px);
@@ -1945,7 +1948,7 @@ html.js body.page-home .reveal-stagger.is-visible>*:nth-child(5) {
     position: fixed;
     left: 0;
     right: 0;
-    top: var(--nav-h);
+    top: calc(var(--nav-h) + var(--vv-top-offset));
     z-index: 3000;
 
     visibility: hidden;

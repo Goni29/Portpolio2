@@ -4781,14 +4781,6 @@ body.page-home header.sticky-top:not(.mega-open) .navbar.navbar-transparent:not(
       z-index: 1050;
     }
 
-    /* Mobile: allow navbar to move with overscroll on HOME */
-    body.page-home .navbar.navbar-transparent {
-      position: sticky;
-      top: 0;
-      left: auto;
-      right: auto;
-    }
-
     header.sticky-top .navbar.navbar-transparent .navbar-brand,
     header.sticky-top .navbar.navbar-transparent .nav-link {
       color: #0f172a !important;
@@ -6159,4 +6151,3 @@ body.page-home header.sticky-top:not(.mega-open) .navbar.navbar-transparent:not(
       font-size: 10.5px;
     }
   }
-

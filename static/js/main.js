@@ -40,6 +40,12 @@ function initUserAgentFlags() {
   if (/Android/i.test(ua)) {
     document.documentElement.classList.add("ua-android");
   }
+  const isiOS =
+    /iPad|iPhone|iPod/i.test(ua) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  if (isiOS) {
+    document.documentElement.classList.add("ua-ios");
+  }
 }
 
 /* ================================
@@ -1170,6 +1176,51 @@ function initNavbarHomeTransparent() {
 }
 
 /* ================================
+   Navbar: iOS top bounce sync
+   - rubber banding 구간에서 sticky header가 본문과 함께 움직이도록 보정
+   ================================ */
+function initNavbarBounceSync() {
+  const header = document.querySelector("header.sticky-top");
+  const nav = document.querySelector(".navbar.navbar-transparent");
+  if (!header) return;
+
+  const vv = window.visualViewport;
+  const isIOS = document.documentElement.classList.contains("ua-ios");
+  const navIsFixed = !!nav && window.getComputedStyle(nav).position === "fixed";
+  const target = navIsFixed ? nav : header;
+
+  if (!isIOS || !vv) {
+    target.style.removeProperty("top");
+    return;
+  }
+
+  let raf = null;
+  const getViewportTop = () => {
+    const offsetTop = Math.max(0, Math.round(vv.offsetTop || 0));
+    const pageTop = typeof vv.pageTop === "number" ? vv.pageTop : 0;
+    const pullDown = pageTop < 0 ? Math.round(Math.abs(pageTop)) : 0;
+    return offsetTop + pullDown;
+  };
+
+  const sync = () => {
+    raf = null;
+    target.style.top = `${getViewportTop()}px`;
+  };
+
+  const onTick = () => {
+    if (raf) return;
+    raf = requestAnimationFrame(sync);
+  };
+
+  sync();
+  window.addEventListener("scroll", onTick, { passive: true });
+  window.addEventListener("resize", onTick, { passive: true });
+  window.addEventListener("orientationchange", onTick, { passive: true });
+  vv.addEventListener("scroll", onTick, { passive: true });
+  vv.addEventListener("resize", onTick, { passive: true });
+}
+
+/* ================================
    Mega menu (Desktop only)
    - 현재 style.css의 "Mega menu FINAL" 구조 그대로
    - header.sticky-top 에 mega-open 토글
@@ -1373,6 +1424,7 @@ function initModalScrollFix() {
    ================================ */
 document.addEventListener("DOMContentLoaded", () => {
   initUserAgentFlags();
+  initNavbarBounceSync();
   initTreat2();
   initHeroIndicators();
   initHeroScrollHint();
@@ -1441,6 +1493,35 @@ document.addEventListener("DOMContentLoaded", () => {
     const OPEN_ANIM_MS = 420;
     const SWITCH_MS = 170;
     const PANEL_CLOSE_MS = 220;
+    let navHideTimer = 0;
+    let suppressNextOutsideClick = false;
+    let suppressOutsideClickTimer = 0;
+
+    const clearOutsideClickSuppress = () => {
+      suppressNextOutsideClick = false;
+      if (suppressOutsideClickTimer) {
+        window.clearTimeout(suppressOutsideClickTimer);
+        suppressOutsideClickTimer = 0;
+      }
+    };
+
+    const armOutsideClickSuppress = () => {
+      suppressNextOutsideClick = true;
+      if (suppressOutsideClickTimer) window.clearTimeout(suppressOutsideClickTimer);
+      suppressOutsideClickTimer = window.setTimeout(() => {
+        suppressNextOutsideClick = false;
+        suppressOutsideClickTimer = 0;
+      }, 420);
+    };
+
+    const cancelNavClosing = () => {
+      if (navHideTimer) {
+        window.clearTimeout(navHideTimer);
+        navHideTimer = 0;
+      }
+      topNav.__navClosing = false;
+      topNav.classList.remove("mnav-nav-closing", "mnav-nav-closing-run", "mnav-closing");
+    };
 
     /* ---------------------------------------------------------
        ✅ 0) 스크롤 고정/복원 (플리커 방지: rAF 사용 금지)
@@ -1556,7 +1637,7 @@ document.addEventListener("DOMContentLoaded", () => {
        --------------------------------------------------------- */
     const openHamburger = () => {
       if (!isMobile()) return;
-      if (topNav.__navClosing) return;
+      if (topNav.__navClosing) cancelNavClosing();
 
       // ✅ 터치 표시/포커스 남음 방지
       document.activeElement?.blur?.();
@@ -1588,7 +1669,9 @@ document.addEventListener("DOMContentLoaded", () => {
         topNav.classList.add("mnav-nav-closing-run");
       });
 
-      window.setTimeout(() => {
+      if (navHideTimer) window.clearTimeout(navHideTimer);
+      navHideTimer = window.setTimeout(() => {
+        navHideTimer = 0;
         inst.hide();
       }, NAV_CLOSE_MS);
 
@@ -1613,6 +1696,11 @@ document.addEventListener("DOMContentLoaded", () => {
             toggler.blur();
           }, 0);
 
+          if (topNav.__navClosing) {
+            openHamburger();
+            return;
+          }
+
           const isShown = topNav.classList.contains("show");
           if (isShown) closeHamburger();
           else openHamburger();
@@ -1621,13 +1709,13 @@ document.addEventListener("DOMContentLoaded", () => {
       );
     }
 
-    let suppressNextOutsideClick = false;
-
     if (!topNav.__mnavDocCloseBound) {
       topNav.__mnavDocCloseBound = true;
       const docClose = (e) => {
         if (e.type === "click" && suppressNextOutsideClick) {
-          suppressNextOutsideClick = false;
+          const target = e.target;
+          clearOutsideClickSuppress();
+          if (target && target.closest(".navbar-toggler")) return;
           if (e.cancelable) e.preventDefault();
           e.stopPropagation();
           if (typeof e.stopImmediatePropagation === "function") e.stopImmediatePropagation();
@@ -1642,7 +1730,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (target.closest(".navbar-toggler")) return;
 
         // Close-on-outside should not click-through to underlying links.
-        if (e.type === "touchstart") suppressNextOutsideClick = true;
+        if (e.type === "touchstart") armOutsideClickSuppress();
         if (e.cancelable) e.preventDefault();
         e.stopPropagation();
         if (typeof e.stopImmediatePropagation === "function") e.stopImmediatePropagation();
@@ -1666,6 +1754,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const resetForDesktop = () => {
       if (isMobile()) return;
+      cancelNavClosing();
+      clearOutsideClickSuppress();
       topNav.classList.remove(
         "mnav-has-open",
         "mnav-closing",
@@ -1834,6 +1924,11 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     topNav.addEventListener("hidden.bs.collapse", () => {
+      if (navHideTimer) {
+        window.clearTimeout(navHideTimer);
+        navHideTimer = 0;
+      }
+      clearOutsideClickSuppress();
       window.clearTimeout(closeTimer);
       topNav.classList.remove(
         "mnav-has-open",

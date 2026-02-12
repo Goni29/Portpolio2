@@ -717,9 +717,9 @@ body.page-sub .navbar .navbar-brand {
   color: #fff;
 }
 
-@media (min-width: 993px) {
+@media (min-width: 1200px) {
   .treat2-head .section-head {
-    padding-right: 380px;
+    padding-right: clamp(80px, 10vw, 220px);
   }
 }
 
@@ -989,6 +989,8 @@ body.page-sub .navbar .navbar-brand {
 }
 
 .doctor3-viewport {
+  --doc-gap: clamp(14px, 1.6vw, 22px);
+  --doc-pad: clamp(14px, 1.6vw, 22px);
   position: relative;
   overflow: hidden;
   border-radius: 36px;
@@ -1000,10 +1002,16 @@ body.page-sub .navbar .navbar-brand {
 .doctor3-track {
   height: 100%;
   display: flex;
-  gap: clamp(16px, 2vw, 22px);
-  padding: clamp(16px, 2vw, 22px);
+  gap: var(--doc-gap);
+  padding: var(--doc-pad);
   will-change: transform;
   transition: transform .62s cubic-bezier(.22, .85, .22, 1);
+}
+
+@media (min-width: 992px) {
+  .doctor3-track > .doctor3-spacer {
+    display: none;
+  }
 }
 
 .doctor3-slide {
@@ -1015,7 +1023,7 @@ body.page-sub .navbar .navbar-brand {
   background: transparent;
   border-radius: 28px;
   overflow: hidden;
-  flex: 0 0 clamp(320px, 34vw, 520px);
+  flex: 0 0 min(520px, calc((100% - (var(--doc-pad) * 2) - var(--doc-gap)) / 2));
   box-shadow: 0 18px 70px rgba(0, 0, 0, .12);
   transform: translateZ(0) scale(.90);
   opacity: .82;
@@ -1025,9 +1033,7 @@ body.page-sub .navbar .navbar-brand {
 .doctor3-slide img {
   width: 100%;
   height: 100%;
-  display: flex;
-      align-items: center;
-      min-height: 48px;
+  display: block;
   object-fit: cover;
   object-position: center;
 }
@@ -4631,6 +4637,92 @@ body.page-sub .navbar .nav-auth-link:hover {
 body.page-home header.sticky-top:not(.mega-open) .navbar.navbar-transparent:not(.is-solid) .nav-auth-link:focus-visible {
   outline-color: rgba(var(--white-rgb), .55);
 }
+/* =========================================================
+   Compact desktop stabilization (992px - 1366px)
+   ========================================================= */
+@media (min-width: 992px) and (max-width: 1366px) {
+  header.sticky-top .navbar {
+    font-size: 15px !important;
+  }
+
+  .navbar .container {
+    padding-right: 152px;
+  }
+
+  #topNav .navbar-nav {
+    column-gap: 6px;
+  }
+
+  #topNav .nav-link {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  #topNav .nav-reserve {
+    padding: .42rem .78rem !important;
+    font-size: 13px !important;
+  }
+
+  .nav-auth-dock {
+    right: 10px;
+    transform: translateY(-50%);
+    gap: 10px;
+  }
+
+  .nav-auth-link {
+    font-size: 13px;
+    padding: 4px 2px;
+  }
+
+  .doctor3-inner {
+    grid-template-columns: minmax(300px, 420px) 1fr;
+    gap: clamp(16px, 2.4vw, 28px);
+    align-items: center;
+  }
+
+  .doctor3-viewport {
+    height: clamp(360px, 34vw, 500px);
+    border-radius: 28px;
+    overflow: hidden;
+  }
+
+  .doctor3-track {
+    gap: 14px;
+    padding: 14px;
+  }
+
+  .doctor3-slide {
+    flex: 0 0 calc((100% - 14px) / 2);
+  }
+
+  .treat2-head {
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .treat2-head .section-head {
+    width: 100%;
+    padding-right: 0;
+  }
+
+  .treat2-tabs {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .treat2-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .treat2-tab {
+    white-space: nowrap;
+  }
+}
 
 /* 여기서부터 모바일 */
 
@@ -5299,6 +5391,22 @@ body.page-home header.sticky-top:not(.mega-open) .navbar.navbar-transparent:not(
     margin-left: auto !important;
     margin-right: auto !important;
   }
+
+  .news-wrap .news-item-meta {
+    display: none !important;
+  }
+
+  .news-wrap .news-item {
+    align-items: flex-start;
+    gap: 0;
+  }
+
+  .news-wrap .news-item-title {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.45;
+  }
 }
 
 /* =========================================================
@@ -5493,7 +5601,7 @@ body.page-home header.sticky-top:not(.mega-open) .navbar.navbar-transparent:not(
    - 활성: scale(1)
    - 자동 이동 중(.no-scale-anim)엔 transform transition만 끔(밀림 방지)
    ========================================================= */
-@media (pointer: coarse) {
+@media (max-width: 991.98px) and (pointer: coarse) {
 
   /* ✅ 비활성(기본) = 전체 카드 통째로 축소 */
   #doctorTrack .doctor3-slide {
@@ -5514,7 +5622,7 @@ body.page-home header.sticky-top:not(.mega-open) .navbar.navbar-transparent:not(
   }
 }
 
-@media (pointer: coarse) {
+@media (max-width: 991.98px) and (pointer: coarse) {
   #doctorTrack .doctor3-slide {
     overflow: hidden;
     /* 기본 */
@@ -5535,7 +5643,7 @@ body.page-home header.sticky-top:not(.mega-open) .navbar.navbar-transparent:not(
 /* =========================================================
    Doctor3 모바일: 가로 스크롤바 숨기기 (기능 유지)
    ========================================================= */
-@media (pointer: coarse) {
+@media (max-width: 991.98px) and (pointer: coarse) {
 
   /* Chrome / Edge / Safari */
   #doctorViewport {

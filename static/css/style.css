@@ -1002,6 +1002,7 @@ body.page-sub .navbar .navbar-brand {
 .doctor3-track {
   height: 100%;
   display: flex;
+  justify-content: center;
   gap: var(--doc-gap);
   padding: var(--doc-pad);
   will-change: transform;
@@ -4692,7 +4693,7 @@ body.page-home header.sticky-top:not(.mega-open) .navbar.navbar-transparent:not(
   }
 
   .doctor3-slide {
-    flex: 0 0 calc((100% - 14px) / 2);
+    flex: 0 0 calc((100% - 28px - 14px) / 2);
   }
 
   .treat2-head {

@@ -1621,19 +1621,36 @@ document.addEventListener("DOMContentLoaded", () => {
       );
     }
 
+    let suppressNextOutsideClick = false;
+
     if (!topNav.__mnavDocCloseBound) {
       topNav.__mnavDocCloseBound = true;
       const docClose = (e) => {
+        if (e.type === "click" && suppressNextOutsideClick) {
+          suppressNextOutsideClick = false;
+          if (e.cancelable) e.preventDefault();
+          e.stopPropagation();
+          if (typeof e.stopImmediatePropagation === "function") e.stopImmediatePropagation();
+          return;
+        }
+
         if (!isMobile()) return;
         if (!topNav.classList.contains("show")) return;
         const target = e.target;
         if (!target) return;
         if (target.closest("#topNav")) return;
         if (target.closest(".navbar-toggler")) return;
+
+        // Close-on-outside should not click-through to underlying links.
+        if (e.type === "touchstart") suppressNextOutsideClick = true;
+        if (e.cancelable) e.preventDefault();
+        e.stopPropagation();
+        if (typeof e.stopImmediatePropagation === "function") e.stopImmediatePropagation();
+
         closeHamburger();
       };
       document.addEventListener("click", docClose, true);
-      document.addEventListener("touchstart", docClose, { passive: true, capture: true });
+      document.addEventListener("touchstart", docClose, { passive: false, capture: true });
     }
 
     /* ---------------------------------------------------------

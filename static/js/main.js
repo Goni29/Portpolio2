@@ -22,9 +22,38 @@
     };
   };
 
+  const getPageScrollRoot = () => document.getElementById("pageScroll");
+  const usePageScrollRoot = () =>
+    document.documentElement.classList.contains("ua-ios") && !!getPageScrollRoot();
+
+  const getScrollY = () => {
+    if (usePageScrollRoot()) {
+      const root = getPageScrollRoot();
+      return root ? root.scrollTop : 0;
+    }
+    return window.scrollY || window.pageYOffset || 0;
+  };
+
+  const scrollToY = (top, behavior = "auto") => {
+    if (usePageScrollRoot()) {
+      const root = getPageScrollRoot();
+      if (!root) return;
+      root.scrollTo({ top, behavior });
+      return;
+    }
+    window.scrollTo({ top, behavior });
+  };
+
+  const getScrollEventTarget = () => (usePageScrollRoot() ? getPageScrollRoot() : window);
+
   // 전역 공유 (필요한 init에서 사용)
   window.__PH = window.__PH || {};
   window.__PH.rafThrottle = rafThrottle;
+  window.__PH.getPageScrollRoot = getPageScrollRoot;
+  window.__PH.usePageScrollRoot = usePageScrollRoot;
+  window.__PH.getScrollY = getScrollY;
+  window.__PH.scrollToY = scrollToY;
+  window.__PH.getScrollEventTarget = getScrollEventTarget;
 })();
 
 /* ================================
@@ -401,15 +430,17 @@ function initHeroScrollHint() {
   const hint = document.querySelector(".hero-scroll-hint");
   if (!hint || hint.__hintInit) return;
   hint.__hintInit = true;
+  const getScrollY = window.__PH?.getScrollY || (() => window.scrollY || window.pageYOffset || 0);
+  const scrollTarget = window.__PH?.getScrollEventTarget?.() || window;
 
   const update = () => {
-    const y = window.scrollY || window.pageYOffset || 0;
+    const y = getScrollY();
     hint.classList.toggle("is-hidden", y > 40);
   };
 
   const onScroll = window.__PH?.rafThrottle ? window.__PH.rafThrottle(update) : update;
   update();
-  window.addEventListener("scroll", onScroll, { passive: true });
+  scrollTarget.addEventListener("scroll", onScroll, { passive: true });
 }
 
 /* ================================
@@ -420,19 +451,22 @@ function initHomeBackToTop() {
   const btn = document.getElementById("fabTop");
   if (!btn || btn.__fabInit) return;
   btn.__fabInit = true;
+  const getScrollY = window.__PH?.getScrollY || (() => window.scrollY || window.pageYOffset || 0);
+  const scrollToY = window.__PH?.scrollToY || ((top, behavior) => window.scrollTo({ top, behavior }));
+  const scrollTarget = window.__PH?.getScrollEventTarget?.() || window;
 
   const update = () => {
-    const y = window.scrollY || window.pageYOffset || 0;
+    const y = getScrollY();
     btn.classList.toggle("is-visible", y > 240);
   };
 
   const onScroll = window.__PH?.rafThrottle ? window.__PH.rafThrottle(update) : update;
   update();
-  window.addEventListener("scroll", onScroll, { passive: true });
+  scrollTarget.addEventListener("scroll", onScroll, { passive: true });
   window.addEventListener("resize", onScroll, { passive: true });
 
   btn.addEventListener("click", () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    scrollToY(0, "smooth");
   });
 }
 
@@ -1181,15 +1215,13 @@ function initNavbarHomeTransparent() {
    ================================ */
 function initNavbarBounceSync() {
   const header = document.querySelector("header.sticky-top");
-  const nav = document.querySelector(".navbar.navbar-transparent");
   if (!header) return;
 
   const root = document.documentElement;
   const scroller = document.scrollingElement || root;
   const vv = window.visualViewport || null;
   const isIOS = root.classList.contains("ua-ios");
-  const navIsFixed = !!nav && window.getComputedStyle(nav).position === "fixed";
-  const target = navIsFixed ? nav : header;
+  const usePageScrollRoot = !!window.__PH?.usePageScrollRoot?.();
   window.__PH = window.__PH || {};
 
   let prevTop = -1;
@@ -1221,12 +1253,11 @@ function initNavbarBounceSync() {
   };
 
   const clearOffset = () => {
-    target.style.removeProperty("top");
     root.style.setProperty("--vv-top-offset", "0px");
     publishRubber(0, 0);
   };
 
-  if (!isIOS) {
+  if (!isIOS || usePageScrollRoot) {
     clearOffset();
     return;
   }
@@ -1234,7 +1265,8 @@ function initNavbarBounceSync() {
   const measure = () => {
     const rect = scroller.getBoundingClientRect();
     const viewportH = Math.round(window.innerHeight || root.clientHeight || 0);
-
+    const y = Math.max(0, Math.round(window.scrollY || window.pageYOffset || 0));
+    const nearTop = y <= 2;
     const vvOffsetTop = vv ? Math.max(0, Math.round(vv.offsetTop || 0)) : 0;
     const vvPageTop = vv && typeof vv.pageTop === "number" ? vv.pageTop : 0;
     const vvTopPull = vvPageTop < -EPS ? Math.round(Math.abs(vvPageTop)) : 0;
@@ -1244,17 +1276,21 @@ function initNavbarBounceSync() {
       viewportH > 0 && rect.bottom < viewportH - EPS
         ? Math.round(viewportH - rect.bottom)
         : 0;
+    const bottomPull = Math.max(0, docBottomPull);
+    const topFromViewport = nearTop ? Math.max(vvOffsetTop, vvTopPull) : vvTopPull;
+    const topOffset = bottomPull > 0 ? 0 : Math.max(docTopPull, topFromViewport);
 
     return {
-      topOffset: Math.max(vvOffsetTop, vvTopPull, docTopPull),
-      bottomPull: Math.max(0, docBottomPull)
+      // Top pull can be reported either by document rect or visualViewport,
+      // depending on gesture type (drag vs flick) in Safari.
+      topOffset: Math.max(0, Math.min(topOffset, 160)),
+      bottomPull
     };
   };
 
   const apply = () => {
     applyRAF = null;
     const { topOffset, bottomPull } = measure();
-    target.style.top = `${topOffset}px`;
     root.style.setProperty("--vv-top-offset", `${topOffset}px`);
     publishRubber(topOffset, bottomPull);
   };
@@ -1305,6 +1341,10 @@ function initMegaMenu() {
   const MQ = window.matchMedia("(min-width: 992px)");
   const vv = window.visualViewport;
   const isIOS = document.documentElement.classList.contains("ua-ios");
+  const hasTouchInput = navigator.maxTouchPoints > 0;
+  const hasCoarsePointer = window.matchMedia("(pointer: coarse)").matches;
+  const canHover = window.matchMedia("(any-hover: hover)").matches;
+  const useOutsideTouchClose = isIOS && hasTouchInput && hasCoarsePointer && !canHover;
   const isRubberBanding = () => !!window.__PH?.iosRubberBanding?.active;
   const isViewportShifted = () => {
     if (!isIOS || !vv) return false;
@@ -1322,6 +1362,17 @@ function initMegaMenu() {
     // desktop에서만 의미 있음
     const h = Math.round(navEl.getBoundingClientRect().height);
     document.documentElement.style.setProperty("--nav-h", `${h}px`);
+  };
+
+  const syncMegaViewportFrame = () => {
+    if (!MQ.matches || !isIOS) return;
+    const host = mega.offsetParent || header;
+    const hostRect = host.getBoundingClientRect();
+    const viewportW = Math.round(window.innerWidth || document.documentElement.clientWidth || 0);
+    if (viewportW <= 0) return;
+    mega.style.left = `${Math.round(-hostRect.left)}px`;
+    mega.style.width = `${viewportW}px`;
+    mega.style.maxWidth = `${viewportW}px`;
   };
 
   const layoutCols = () => {
@@ -1360,6 +1411,7 @@ function initMegaMenu() {
   const syncLayout = () => {
     if (!MQ.matches) return;
     setNavH();
+    syncMegaViewportFrame();
     layoutCols();
   };
 
@@ -1381,8 +1433,17 @@ function initMegaMenu() {
     syncLayoutRAF();
   };
 
-  const close = () => {
+  const close = (force = false) => {
     if (!MQ.matches) return;
+    if (force) {
+      clearCloseTimer();
+      header.classList.remove("mega-open");
+      return;
+    }
+    if (useOutsideTouchClose) {
+      clearCloseTimer();
+      return;
+    }
     if (isIOS && isViewportSettling()) {
       clearCloseTimer();
       return;
@@ -1397,8 +1458,28 @@ function initMegaMenu() {
 
   navWrap.addEventListener("mouseenter", open);
   mega.addEventListener("mouseenter", open);
-  navWrap.addEventListener("mouseleave", close);
-  mega.addEventListener("mouseleave", close);
+  if (!useOutsideTouchClose) {
+    navWrap.addEventListener("mouseleave", close);
+    mega.addEventListener("mouseleave", close);
+  } else {
+    const inMegaScope = (target) =>
+      !!(target && target.closest && target.closest(".nav-mega, .mega-global"));
+
+    const closeOnOutsidePress = (e) => {
+      if (!MQ.matches) return;
+      if (!header.classList.contains("mega-open")) return;
+      if (inMegaScope(e.target)) {
+        clearCloseTimer();
+        return;
+      }
+      close(true);
+    };
+
+    navWrap.addEventListener("touchstart", open, { passive: true });
+    mega.addEventListener("touchstart", open, { passive: true });
+    document.addEventListener("touchstart", closeOnOutsidePress, { passive: true, capture: true });
+    document.addEventListener("mousedown", closeOnOutsidePress, true);
+  }
   if (isIOS) {
     window.addEventListener("scroll", markViewportMotion, { passive: true });
     window.addEventListener("resize", markViewportMotion, { passive: true });
@@ -1430,6 +1511,9 @@ function initMegaMenu() {
   const handleMQ = () => {
     if (!MQ.matches) {
       header.classList.remove("mega-open");
+      mega.style.removeProperty("left");
+      mega.style.removeProperty("width");
+      mega.style.removeProperty("max-width");
       // 모바일에서 CSS 변수는 크게 의미 없지만 값은 유지해도 무방
     } else {
       syncLayoutRAF();
@@ -1459,6 +1543,7 @@ function initScrollSafety() {
 
   const ensureScrollable = () => {
     if (mq.matches) return;
+    if (window.__PH?.usePageScrollRoot?.()) return;
     if (document.body.classList.contains("modal-open")) return;
     if (document.body.classList.contains("nav-lock")) return;
     const style = getComputedStyle(document.body);
@@ -1529,10 +1614,33 @@ function initModalScrollFix() {
 }
 
 /* ================================
+   Header metrics
+   ================================ */
+function initHeaderMetrics() {
+  const header = document.querySelector("header.sticky-top");
+  if (!header) return;
+  const root = document.documentElement;
+
+  const apply = () => {
+    const h = Math.round(header.getBoundingClientRect().height || 0);
+    if (h > 0) root.style.setProperty("--header-h", `${h}px`);
+  };
+
+  const onLayout = window.__PH?.rafThrottle ? window.__PH.rafThrottle(apply) : apply;
+  apply();
+  window.addEventListener("load", onLayout);
+  window.addEventListener("resize", onLayout, { passive: true });
+  window.addEventListener("orientationchange", onLayout, { passive: true });
+  document.addEventListener("shown.bs.collapse", onLayout);
+  document.addEventListener("hidden.bs.collapse", onLayout);
+}
+
+/* ================================
    Boot
    ================================ */
 document.addEventListener("DOMContentLoaded", () => {
   initUserAgentFlags();
+  initHeaderMetrics();
   initNavbarBounceSync();
   initTreat2();
   initHeroIndicators();
@@ -1637,12 +1745,14 @@ document.addEventListener("DOMContentLoaded", () => {
        --------------------------------------------------------- */
     // ✅ fixed 방식 제거: 이미지 섹션에서 white flash 방지
     let savedScrollY = 0;
+    const getScrollY = window.__PH?.getScrollY || (() => window.scrollY || window.pageYOffset || 0);
+    const scrollToY = window.__PH?.scrollToY || ((top, behavior) => window.scrollTo({ top, behavior }));
 
     const lockScrollPreserve = () => {
       if (document.body.__mnavScrollLocked) return;
       document.body.__mnavScrollLocked = true;
 
-      savedScrollY = window.scrollY || window.pageYOffset || 0;
+      savedScrollY = getScrollY();
 
       // ✅ 스크롤 잠금은 overflow로만
       document.body.classList.add("nav-lock");
@@ -1659,10 +1769,15 @@ document.addEventListener("DOMContentLoaded", () => {
       document.body.classList.remove("nav-lock");
       document.documentElement.style.overscrollBehavior = "";
 
+      if (window.__PH?.usePageScrollRoot?.()) {
+        scrollToY(savedScrollY, "auto");
+        return;
+      }
+
       // ✅ 원래 위치 복원 (smooth 금지)
       const prev = document.documentElement.style.scrollBehavior;
       document.documentElement.style.scrollBehavior = "auto";
-      window.scrollTo(0, savedScrollY);
+      scrollToY(savedScrollY, "auto");
       document.documentElement.style.scrollBehavior = prev || "";
     };
 
@@ -2072,31 +2187,49 @@ document.addEventListener("DOMContentLoaded", () => {
     setEmpty(true);
   }
   function applySubNavOffset() {
-    const mq = window.matchMedia("(max-width: 991.98px)");
-    if (!mq.matches) return;
-
     const body = document.body;
-    if (!body.classList.contains("page-sub")) return;
+    const pageScrollRoot = window.__PH?.getPageScrollRoot?.() || null;
+    const usePageRoot = !!window.__PH?.usePageScrollRoot?.() && !!pageScrollRoot;
+    const padTarget = usePageRoot ? pageScrollRoot : body;
+    const clearPadding = () => {
+      padTarget.style.removeProperty("padding-top");
+      if (padTarget !== body) body.style.removeProperty("padding-top");
+    };
+
+    if (!body.classList.contains("page-sub")) {
+      clearPadding();
+      return;
+    }
 
     const header = document.querySelector("header.sticky-top");
     if (!header) return;
 
     const pos = window.getComputedStyle(header).position;
     if (pos !== "fixed") {
-      body.style.removeProperty("padding-top");
+      clearPadding();
       return;
     }
 
-    const h = Math.ceil(header.getBoundingClientRect().height || 64);
+    const rect = header.getBoundingClientRect();
+    const top = Math.max(0, Math.round(rect.top || 0));
+    const h = Math.ceil(rect.height || 64);
 
     // ✅ CSS !important를 이기도록 important로 지정
-    body.style.setProperty("padding-top", `${h}px`, "important");
+    padTarget.style.setProperty("padding-top", `${top + h}px`, "important");
   }
 
   document.addEventListener("DOMContentLoaded", () => {
-    applySubNavOffset();
-    window.addEventListener("resize", applySubNavOffset, { passive: true });
-    window.addEventListener("orientationchange", applySubNavOffset, { passive: true });
+    const applyOffset = window.__PH?.rafThrottle
+      ? window.__PH.rafThrottle(applySubNavOffset)
+      : applySubNavOffset;
+    const scrollTarget = window.__PH?.getScrollEventTarget?.() || window;
+
+    applyOffset();
+    window.addEventListener("load", applyOffset);
+    window.addEventListener("resize", applyOffset, { passive: true });
+    window.addEventListener("orientationchange", applyOffset, { passive: true });
+    scrollTarget.addEventListener("scroll", applyOffset, { passive: true });
+    window.addEventListener("ph:ios-rubberband", applyOffset);
   });
 
   ready(() => {

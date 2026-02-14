@@ -14,6 +14,9 @@
   --muted: #64748b;
   --soft: #f3f5f8;
   --radius: 32px;
+  --header-h: 72px;
+  --z-header: 7000;
+  --z-navbar: 7100;
   --vv-top-offset: 0px;
   --ios-rubber-top: 0px;
   --ios-rubber-bottom: 0px;
@@ -95,6 +98,47 @@ body {
   padding: 0;
   overflow-x: hidden;
   overscroll-behavior-y: none;
+}
+
+.page-scroll {
+  position: relative;
+}
+
+html.ua-ios body {
+  height: 100svh;
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+}
+
+html.ua-ios #pageScroll {
+  position: fixed;
+  inset: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+html.ua-ios body.page-home header.sticky-top,
+html.ua-ios body.page-sub header.sticky-top {
+  position: sticky !important;
+  top: 0 !important;
+  transform: none !important;
+  -webkit-transform: none !important;
+  will-change: auto;
+}
+
+html.ua-ios body.page-home header.sticky-top {
+  margin-bottom: calc(-1 * var(--header-h));
+}
+
+html.ua-ios header.sticky-top .navbar {
+  position: relative;
+}
+
+html.ua-ios body.nav-lock #pageScroll,
+html.ua-ios body.modal-open #pageScroll {
+  overflow-y: hidden !important;
 }
 
 /* Mobile: allow top overscroll (iOS/Android/Kakao) */
@@ -236,12 +280,27 @@ p.page-sub,
    Navbar Transparent (홈 Hero에서만 투명 -> 스크롤 시 흰색)
    ========================================================= */
 /* ✅ HOME에서만 네비 투명+fixed */
-body.page-home .navbar.navbar-transparent {
-  position: fixed;
+header.sticky-top {
+  position: fixed !important;
   top: 0;
   left: 0;
   right: 0;
-  z-index: 1000;
+  width: 100%;
+  z-index: var(--z-header) !important;
+  isolation: isolate;
+  will-change: transform;
+  transform: translate3d(0, var(--vv-top-offset), 0);
+  -webkit-transform: translate3d(0, var(--vv-top-offset), 0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+body.page-home .navbar.navbar-transparent {
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
+  z-index: var(--z-navbar);
   background: transparent !important;
   border-bottom: 0 !important;
   box-shadow: none !important;
@@ -277,9 +336,8 @@ body.page-home .navbar.navbar-transparent.is-solid .nav-link:hover {
 
 /* ✅ SUB에서는 네비가 항상 solid(겹침/투명 방지) */
 body.page-sub .navbar {
-  position: sticky;
-  /* header.sticky-top과 함께 자연스럽게 */
-  top: 0;
+  position: relative;
+  z-index: var(--z-navbar);
   background: rgba(255, 255, 255, .96) !important;
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--line);
@@ -1948,11 +2006,24 @@ html.js body.page-home .reveal-stagger.is-visible>*:nth-child(5) {
     position: fixed;
     left: 0;
     right: 0;
-    top: calc(var(--nav-h) + var(--vv-top-offset));
+    top: var(--nav-h);
     z-index: 3000;
+    transform: translate3d(0, var(--vv-top-offset), 0);
+    -webkit-transform: translate3d(0, var(--vv-top-offset), 0);
 
     visibility: hidden;
     pointer-events: none;
+  }
+
+  html.ua-ios .mega-global {
+    position: absolute;
+    top: 100%;
+    left: calc((100vw - 100%) / -2);
+    right: auto;
+    width: 100vw;
+    max-width: 100vw;
+    transform: none !important;
+    -webkit-transform: none !important;
   }
 
   header.sticky-top.mega-open .mega-global {
@@ -2261,6 +2332,11 @@ html.js body.page-home .reveal-stagger.is-visible>*:nth-child(5) {
 
 header.sticky-top .navbar {
   font-size: 16px !important;
+  z-index: var(--z-navbar);
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 header.sticky-top .navbar .nav-link {
@@ -4763,9 +4839,9 @@ body.page-home header.sticky-top:not(.mega-open) .navbar.navbar-transparent:not(
     }
 
     body.page-sub header.sticky-top {
-      position: sticky !important;
+      position: fixed !important;
       top: 0;
-      z-index: 1050;
+      z-index: var(--z-header) !important;
     }
 
     /* ✅ 네비 높이만큼 본문 내려주기 */
@@ -4781,7 +4857,7 @@ body.page-home header.sticky-top:not(.mega-open) .navbar.navbar-transparent:not(
       box-shadow: 0 12px 30px rgba(15, 23, 42, .10);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-      z-index: 1050;
+      z-index: var(--z-navbar);
     }
 
     header.sticky-top .navbar.navbar-transparent .navbar-brand,

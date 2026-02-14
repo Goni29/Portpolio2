@@ -1342,10 +1342,15 @@ function initMegaMenu() {
   const vv = window.visualViewport;
   const isIOS = document.documentElement.classList.contains("ua-ios");
   const hasTouchInput = navigator.maxTouchPoints > 0;
-  const hasCoarsePointer = window.matchMedia("(pointer: coarse)").matches;
   const canHover = window.matchMedia("(any-hover: hover)").matches;
-  const useOutsideTouchClose = isIOS && hasTouchInput && hasCoarsePointer && !canHover;
+  const useOutsideTouchClose = isIOS && hasTouchInput;
   const isRubberBanding = () => !!window.__PH?.iosRubberBanding?.active;
+  let lastRubberAt = 0;
+  const markRubberActivity = () => {
+    lastRubberAt = performance.now();
+  };
+  const isRubberCoolingDown = () => performance.now() - lastRubberAt < 420;
+  let touchPinnedOpen = false;
   const isViewportShifted = () => {
     if (!isIOS || !vv) return false;
     const offsetTop = Math.max(0, Number(vv.offsetTop || 0));
@@ -1368,9 +1373,14 @@ function initMegaMenu() {
     if (!MQ.matches || !isIOS) return;
     const host = mega.offsetParent || header;
     const hostRect = host.getBoundingClientRect();
-    const viewportW = Math.round(window.innerWidth || document.documentElement.clientWidth || 0);
+    const navRect = navEl.getBoundingClientRect();
+    const viewportLeft = vv ? Number(vv.offsetLeft || 0) : 0;
+    const viewportW = Math.round(
+      (vv && Number(vv.width || 0)) || window.innerWidth || document.documentElement.clientWidth || 0
+    );
     if (viewportW <= 0) return;
-    mega.style.left = `${Math.round(-hostRect.left)}px`;
+    mega.style.top = `${Math.max(0, Math.round(navRect.bottom - hostRect.top))}px`;
+    mega.style.left = `${Math.round(viewportLeft - hostRect.left)}px`;
     mega.style.width = `${viewportW}px`;
     mega.style.maxWidth = `${viewportW}px`;
   };
@@ -1425,26 +1435,51 @@ function initMegaMenu() {
     t = null;
   };
 
-  const open = () => {
+  const open = (fromTouch = false) => {
     if (!MQ.matches) return;
     if (isIOS && isRubberBanding()) return;
+    if (fromTouch && isIOS) touchPinnedOpen = true;
     clearCloseTimer();
     header.classList.add("mega-open");
     syncLayoutRAF();
   };
 
-  const close = (force = false) => {
+  const close = (force = false, e = null) => {
     if (!MQ.matches) return;
     if (force) {
       clearCloseTimer();
       header.classList.remove("mega-open");
+      touchPinnedOpen = false;
       return;
     }
-    if (useOutsideTouchClose) {
+    const fromMouseLeave = e?.type === "mouseleave" && canHover;
+    const likelyRubberPhase =
+      isIOS && (isRubberBanding() || isViewportShifted() || isRubberCoolingDown());
+    let allowLeaveCloseFromTouchPin = false;
+    if (touchPinnedOpen) {
+      const allowMouseLeaveClose = fromMouseLeave && !likelyRubberPhase;
+      if (allowMouseLeaveClose) {
+        touchPinnedOpen = false;
+        allowLeaveCloseFromTouchPin = true;
+      } else {
+        clearCloseTimer();
+        return;
+      }
+    }
+    if (useOutsideTouchClose && !allowLeaveCloseFromTouchPin) {
       clearCloseTimer();
       return;
     }
-    if (isIOS && isViewportSettling()) {
+    if (fromMouseLeave && !likelyRubberPhase) {
+      clearCloseTimer();
+      t = setTimeout(() => header.classList.remove("mega-open"), 90);
+      return;
+    }
+    if (isIOS && fromMouseLeave && hasTouchInput && !e.relatedTarget && likelyRubberPhase) {
+      clearCloseTimer();
+      return;
+    }
+    if (isIOS && (isViewportSettling() || isRubberCoolingDown())) {
       clearCloseTimer();
       return;
     }
@@ -1458,38 +1493,103 @@ function initMegaMenu() {
 
   navWrap.addEventListener("mouseenter", open);
   mega.addEventListener("mouseenter", open);
-  if (!useOutsideTouchClose) {
-    navWrap.addEventListener("mouseleave", close);
-    mega.addEventListener("mouseleave", close);
-  } else {
+  navWrap.addEventListener("mouseleave", (e) => close(false, e));
+  mega.addEventListener("mouseleave", (e) => close(false, e));
+  if (useOutsideTouchClose) {
     const inMegaScope = (target) =>
       !!(target && target.closest && target.closest(".nav-mega, .mega-global"));
+    const TAP_MOVE_MAX = 12;
+    let outsideTouch = null;
+    let lastOutsideTouchTs = 0;
 
-    const closeOnOutsidePress = (e) => {
+    const getTrackedTouch = (touchList, id) => {
+      if (!touchList || id == null) return null;
+      for (let i = 0; i < touchList.length; i += 1) {
+        if (touchList[i].identifier === id) return touchList[i];
+      }
+      return null;
+    };
+
+    const onTouchStart = (e) => {
       if (!MQ.matches) return;
       if (!header.classList.contains("mega-open")) return;
       if (inMegaScope(e.target)) {
-        clearCloseTimer();
+        outsideTouch = null;
         return;
       }
+      const t = e.changedTouches?.[0] || e.touches?.[0];
+      if (!t) return;
+      outsideTouch = {
+        id: t.identifier,
+        x: t.clientX,
+        y: t.clientY,
+        moved: false
+      };
+    };
+
+    const onTouchMove = (e) => {
+      if (!outsideTouch) return;
+      const t =
+        getTrackedTouch(e.changedTouches, outsideTouch.id) ||
+        getTrackedTouch(e.touches, outsideTouch.id);
+      if (!t) return;
+      const dx = Math.abs(t.clientX - outsideTouch.x);
+      const dy = Math.abs(t.clientY - outsideTouch.y);
+      if (dx > TAP_MOVE_MAX || dy > TAP_MOVE_MAX) outsideTouch.moved = true;
+    };
+
+    const onTouchEnd = (e) => {
+      if (!outsideTouch) return;
+      const t = getTrackedTouch(e.changedTouches, outsideTouch.id) || e.changedTouches?.[0];
+      const dx = t ? Math.abs(t.clientX - outsideTouch.x) : TAP_MOVE_MAX + 1;
+      const dy = t ? Math.abs(t.clientY - outsideTouch.y) : TAP_MOVE_MAX + 1;
+      const isTap = !outsideTouch.moved && dx <= TAP_MOVE_MAX && dy <= TAP_MOVE_MAX;
+      outsideTouch = null;
+      lastOutsideTouchTs = performance.now();
+      if (isTap) close(true);
+    };
+
+    const onTouchCancel = () => {
+      outsideTouch = null;
+      lastOutsideTouchTs = performance.now();
+    };
+
+    const onMouseDownOutside = (e) => {
+      if (!MQ.matches) return;
+      if (!header.classList.contains("mega-open")) return;
+      if (performance.now() - lastOutsideTouchTs < 450) return;
+      if (inMegaScope(e.target)) return;
       close(true);
     };
 
-    navWrap.addEventListener("touchstart", open, { passive: true });
-    mega.addEventListener("touchstart", open, { passive: true });
-    document.addEventListener("touchstart", closeOnOutsidePress, { passive: true, capture: true });
-    document.addEventListener("mousedown", closeOnOutsidePress, true);
+    navWrap.addEventListener("touchstart", () => open(true), { passive: true });
+    mega.addEventListener("touchstart", () => open(true), { passive: true });
+    document.addEventListener("touchstart", onTouchStart, { passive: true, capture: true });
+    document.addEventListener("touchmove", onTouchMove, { passive: true, capture: true });
+    document.addEventListener("touchend", onTouchEnd, { passive: true, capture: true });
+    document.addEventListener("touchcancel", onTouchCancel, { passive: true, capture: true });
+    document.addEventListener("mousedown", onMouseDownOutside, true);
   }
   if (isIOS) {
     window.addEventListener("scroll", markViewportMotion, { passive: true });
     window.addEventListener("resize", markViewportMotion, { passive: true });
+    const scrollTarget = window.__PH?.getScrollEventTarget?.() || window;
+    if (scrollTarget && scrollTarget !== window) {
+      scrollTarget.addEventListener("scroll", markViewportMotion, { passive: true });
+      scrollTarget.addEventListener("scroll", syncLayoutRAF, { passive: true });
+    }
     if (vv) {
       vv.addEventListener("scroll", markViewportMotion, { passive: true });
       vv.addEventListener("resize", markViewportMotion, { passive: true });
+      vv.addEventListener("scroll", syncLayoutRAF, { passive: true });
+      vv.addEventListener("resize", syncLayoutRAF, { passive: true });
     }
 
     window.addEventListener("ph:ios-rubberband", (e) => {
       if (!MQ.matches) return;
+      if (e?.detail?.active || e?.detail?.topOffset > 0 || e?.detail?.bottomPull > 0) {
+        markRubberActivity();
+      }
       if (!header.classList.contains("mega-open")) return;
       if (e?.detail?.active) {
         clearCloseTimer();
@@ -1511,6 +1611,8 @@ function initMegaMenu() {
   const handleMQ = () => {
     if (!MQ.matches) {
       header.classList.remove("mega-open");
+      touchPinnedOpen = false;
+      mega.style.removeProperty("top");
       mega.style.removeProperty("left");
       mega.style.removeProperty("width");
       mega.style.removeProperty("max-width");

@@ -1822,7 +1822,9 @@ function initFaqAccordionStability() {
 
   const panels = Array.from(root.querySelectorAll(".accordion-collapse[id]"));
   if (!panels.length) return;
-  const buttons = Array.from(root.querySelectorAll(".accordion-button[data-bs-target]"));
+  const buttons = Array.from(
+    root.querySelectorAll(".accordion-button[data-bs-target]")
+  );
   const panelBySel = new Map(panels.map((p) => [`#${p.id}`, p]));
   buttons.forEach((btn) => btn.removeAttribute("data-bs-toggle"));
   const prefersReducedMotion =
@@ -1830,6 +1832,9 @@ function initFaqAccordionStability() {
 
   const getButton = (panel) =>
     root.querySelector(`.accordion-button[data-bs-target="#${panel.id}"]`);
+
+  const getState = (panel) =>
+    panel.dataset.phState || (panel.classList.contains("show") ? "open" : "closed");
 
   const setState = (panel, state) => {
     panel.dataset.phState = state;
@@ -1882,103 +1887,75 @@ function initFaqAccordionStability() {
     }
   };
 
-  const finalizeOpen = (panel) => {
+  const finalizePanel = (panel, open) => {
     cleanupTransition(panel);
     panel.classList.remove("collapsing");
-    panel.classList.add("collapse", "show");
-    clearInline(panel);
-    setState(panel, "open");
-    setButtonState(panel, true);
-  };
-
-  const finalizeClosed = (panel) => {
-    cleanupTransition(panel);
-    panel.classList.remove("collapsing", "show");
     panel.classList.add("collapse");
+    panel.classList.toggle("show", !!open);
     clearInline(panel);
-    setState(panel, "closed");
-    setButtonState(panel, false);
+    setState(panel, open ? "open" : "closed");
+    setButtonState(panel, !!open);
   };
 
   const animatePanel = (panel, toOpen) => {
     cleanupTransition(panel);
     const token = panel.__faqToken;
-    const wasCollapsing = panel.classList.contains("collapsing");
-    const wasShown = panel.classList.contains("show");
-    const wasClosed = !wasCollapsing && !wasShown;
-    let start = 0;
-    let end = 0;
+    const currentHeight = panel.getBoundingClientRect().height;
+    const isCurrentlyShown = panel.classList.contains("show");
+    const isCurrentlyCollapsing = panel.classList.contains("collapsing");
 
-    if (toOpen) {
-      panel.classList.remove("collapse", "show");
-      panel.classList.add("collapsing");
-      panel.style.overflow = "hidden";
-
-      if (wasClosed) {
-        start = 0;
-        panel.style.height = "0px";
-        end = panel.scrollHeight;
-      } else {
-        start = panel.getBoundingClientRect().height;
-        panel.style.height = `${start}px`;
-        end = panel.scrollHeight;
-      }
-    } else {
-      if (wasClosed) {
-        finalizeClosed(panel);
-        return;
-      }
-
-      panel.classList.remove("collapse", "show");
-      panel.classList.add("collapsing");
-      panel.style.overflow = "hidden";
-      start = panel.getBoundingClientRect().height;
-      panel.style.height = `${start}px`;
-      end = 0;
+    if (toOpen && isCurrentlyShown && !isCurrentlyCollapsing) {
+      setState(panel, "open");
+      setButtonState(panel, true);
+      clearInline(panel);
+      return;
     }
-
-    if (prefersReducedMotion || Math.abs(start - end) < 1) {
-      if (toOpen) finalizeOpen(panel);
-      else finalizeClosed(panel);
+    if (!toOpen && !isCurrentlyShown && !isCurrentlyCollapsing) {
+      setState(panel, "closed");
+      setButtonState(panel, false);
+      clearInline(panel);
       return;
     }
 
-    // Reflow to make sure the next height change animates.
+    panel.classList.remove("collapse", "show");
+    panel.classList.add("collapsing");
+    panel.style.overflow = "hidden";
+    panel.style.height = `${Math.max(0, currentHeight)}px`;
+
+    const endHeight = toOpen ? panel.scrollHeight : 0;
+
+    setState(panel, toOpen ? "opening" : "closing");
+    setButtonState(panel, toOpen);
+
+    if (prefersReducedMotion || Math.abs(currentHeight - endHeight) < 1) {
+      finalizePanel(panel, toOpen);
+      return;
+    }
+
     panel.offsetHeight;
 
     const onEnd = (ev) => {
       if (ev.target !== panel || ev.propertyName !== "height") return;
       if (panel.__faqToken !== token) return;
-      if (toOpen) finalizeOpen(panel);
-      else finalizeClosed(panel);
+      finalizePanel(panel, toOpen);
     };
     panel.__faqOnEnd = onEnd;
     panel.addEventListener("transitionend", onEnd);
 
-    const fallbackMs = getHeightTransitionFallbackMs(panel);
     panel.__faqFallbackTimer = window.setTimeout(() => {
       if (panel.__faqToken !== token) return;
-      if (toOpen) finalizeOpen(panel);
-      else finalizeClosed(panel);
-    }, fallbackMs);
+      finalizePanel(panel, toOpen);
+    }, getHeightTransitionFallbackMs(panel));
 
     requestAnimationFrame(() => {
       if (panel.__faqToken !== token) return;
-      panel.style.height = `${end}px`;
+      panel.style.height = `${endHeight}px`;
     });
-
-    setState(panel, toOpen ? "opening" : "closing");
-    setButtonState(panel, toOpen);
   };
 
-  let desiredOpen = null;
+  let desiredOpen = panels.find((panel) => panel.classList.contains("show")) || null;
   panels.forEach((panel) => {
-    if (!desiredOpen && panel.classList.contains("show")) desiredOpen = panel;
-  });
-  panels.forEach((panel) => {
-    if (panel !== desiredOpen && panel.classList.contains("show")) {
-      finalizeClosed(panel);
-    }
+    finalizePanel(panel, panel === desiredOpen);
   });
 
   const applyDesiredState = () => {
@@ -2001,20 +1978,15 @@ function initFaqAccordionStability() {
       const target = panelBySel.get(sel);
       if (!target) return;
 
+      const state = getState(target);
       const targetIsActive =
-        desiredOpen === target &&
-        (target.dataset.phState === "opening" || target.classList.contains("show"));
+        desiredOpen === target && (state === "open" || state === "opening");
+
       desiredOpen = targetIsActive ? null : target;
       applyDesiredState();
     },
     true
   );
-
-  panels.forEach((panel) => {
-    const isOpen = panel === desiredOpen;
-    setState(panel, isOpen ? "open" : "closed");
-    setButtonState(panel, isOpen);
-  });
 }
 
 /* ================================

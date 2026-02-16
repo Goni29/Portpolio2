@@ -1435,6 +1435,7 @@ body.page-sub .navbar.navbar-transparent.is-solid .nav-link:hover {
 .faq-acc {
   max-width: 920px;
   margin: 22px auto 0;
+  overflow-anchor: none;
 }
 
 .faq-acc .accordion-item {

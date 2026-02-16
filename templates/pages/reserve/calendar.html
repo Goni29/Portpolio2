@@ -86,7 +86,8 @@
                         <div class="rsv-row">
                             <div class="rsv-label">이름</div>
                             <div class="rsv-field">
-                                <input class="rsv-input" id="cfName" placeholder="이름">
+                                <input class="rsv-input" id="cfName" placeholder="이름"
+                                    value="{{ (DEMO_USER.name if DEMO_USER and DEMO_USER.name else '') }}">
                             </div>
                         </div>
 
@@ -253,6 +254,7 @@
         const next = document.getElementById("calNext");
         const confirmBtnTop = document.getElementById("calConfirmBtn"); // ✅ 상단 예약확인(조회)
         const csrfToken = document.getElementById("csrfToken")?.value || "";
+        const defaultReserveName = {{ (DEMO_USER.name if DEMO_USER and DEMO_USER.name else "") | tojson }};
         const checkFormWrap = document.getElementById("checkFormWrap");
         const checkResultWrap = document.getElementById("checkResultWrap");
         const checkResultList = document.getElementById("checkResultList");
@@ -411,8 +413,12 @@
         function fillReserveModal() {
             const dateInput = document.getElementById("cfDateInput");
             const timeSelect = document.getElementById("cfTimeSelect");
+            const nameInput = document.getElementById("cfName");
 
             if (dateInput) dateInput.value = selectedDate || "";
+            if (nameInput && defaultReserveName && !String(nameInput.value || "").trim()) {
+                nameInput.value = defaultReserveName;
+            }
 
             if (timeSelect) {
                 timeSelect.innerHTML = `<option value="">예약 시간을 선택해주세요.</option>`;
@@ -441,10 +447,12 @@
 
         function resetReserveForm() {
             // ✅ 예약신청 폼 초기화(다음 예약 시 정보 남지 않게)
-            ["cfName", "cfPhone", "cfBirth", "cfMemo"].forEach(id => {
+            ["cfPhone", "cfBirth", "cfMemo"].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.value = "";
             });
+            const nameInput = document.getElementById("cfName");
+            if (nameInput) nameInput.value = defaultReserveName || "";
 
             // 라디오 초기화
             document.querySelectorAll('input[name="cfGender"]').forEach(r => r.checked = false);

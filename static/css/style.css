@@ -1446,6 +1446,15 @@ body.page-sub .navbar.navbar-transparent.is-solid .nav-link:hover {
   box-shadow: 0 14px 50px rgba(0, 0, 0, .06);
 }
 
+.faq-acc .accordion-header {
+  position: relative;
+  z-index: 1;
+}
+
+.faq-acc .accordion-collapse {
+  overflow: hidden;
+}
+
 .faq-acc .accordion-button {
   font-weight: 900;
   padding: 18px 18px;

@@ -1822,9 +1822,7 @@ function initFaqAccordionStability() {
 
   const panels = Array.from(root.querySelectorAll(".accordion-collapse[id]"));
   if (!panels.length) return;
-  const buttons = Array.from(
-    root.querySelectorAll(".accordion-button[data-bs-target]")
-  );
+  const buttons = Array.from(root.querySelectorAll(".accordion-button[data-bs-target]"));
   const panelBySel = new Map(panels.map((p) => [`#${p.id}`, p]));
   buttons.forEach((btn) => btn.removeAttribute("data-bs-toggle"));
   const prefersReducedMotion =
@@ -1847,11 +1845,6 @@ function initFaqAccordionStability() {
     btn.setAttribute("aria-expanded", isOpenLike ? "true" : "false");
   };
 
-  const clearInline = (panel) => {
-    panel.style.removeProperty("height");
-    panel.style.removeProperty("overflow");
-  };
-
   const parseCssTimeListToMs = (value) => {
     if (!value) return 0;
     return value
@@ -1866,13 +1859,17 @@ function initFaqAccordionStability() {
       .reduce((max, cur) => (cur > max ? cur : max), 0);
   };
 
-  const getHeightTransitionFallbackMs = (panel) => {
+  const getCollapseTransitionMs = (panel) => {
+    const prevClass = panel.className;
+    panel.classList.remove("collapse", "show");
+    panel.classList.add("collapsing");
     const cs = window.getComputedStyle(panel);
     const durationMs = parseCssTimeListToMs(cs.transitionDuration);
     const delayMs = parseCssTimeListToMs(cs.transitionDelay);
-    const total = durationMs + delayMs;
-    if (!Number.isFinite(total) || total <= 0) return 420;
-    return Math.ceil(total + 70);
+    const totalMs = durationMs + delayMs;
+    panel.className = prevClass;
+    if (!Number.isFinite(totalMs) || totalMs <= 0) return 420;
+    return Math.ceil(totalMs + 60);
   };
 
   const cleanupTransition = (panel) => {
@@ -1889,10 +1886,11 @@ function initFaqAccordionStability() {
 
   const finalizePanel = (panel, open) => {
     cleanupTransition(panel);
-    panel.classList.remove("collapsing");
+    panel.classList.remove("collapsing", "show");
     panel.classList.add("collapse");
     panel.classList.toggle("show", !!open);
-    clearInline(panel);
+    panel.style.removeProperty("height");
+    panel.style.removeProperty("overflow");
     setState(panel, open ? "open" : "closed");
     setButtonState(panel, !!open);
   };
@@ -1900,34 +1898,30 @@ function initFaqAccordionStability() {
   const animatePanel = (panel, toOpen) => {
     cleanupTransition(panel);
     const token = panel.__faqToken;
-    const currentHeight = panel.getBoundingClientRect().height;
-    const isCurrentlyShown = panel.classList.contains("show");
-    const isCurrentlyCollapsing = panel.classList.contains("collapsing");
+    const state = getState(panel);
+    const startHeight = panel.getBoundingClientRect().height;
+    const wasShown = panel.classList.contains("show");
+    const wasCollapsing = panel.classList.contains("collapsing");
 
-    if (toOpen && isCurrentlyShown && !isCurrentlyCollapsing) {
-      setState(panel, "open");
+    if (toOpen && wasShown && !wasCollapsing && state === "open") {
       setButtonState(panel, true);
-      clearInline(panel);
       return;
     }
-    if (!toOpen && !isCurrentlyShown && !isCurrentlyCollapsing) {
-      setState(panel, "closed");
+    if (!toOpen && !wasShown && !wasCollapsing && state === "closed") {
       setButtonState(panel, false);
-      clearInline(panel);
       return;
     }
 
     panel.classList.remove("collapse", "show");
     panel.classList.add("collapsing");
     panel.style.overflow = "hidden";
-    panel.style.height = `${Math.max(0, currentHeight)}px`;
+    panel.style.height = `${Math.max(0, startHeight)}px`;
 
     const endHeight = toOpen ? panel.scrollHeight : 0;
-
     setState(panel, toOpen ? "opening" : "closing");
     setButtonState(panel, toOpen);
 
-    if (prefersReducedMotion || Math.abs(currentHeight - endHeight) < 1) {
+    if (prefersReducedMotion || Math.abs(startHeight - endHeight) < 1) {
       finalizePanel(panel, toOpen);
       return;
     }
@@ -1939,13 +1933,13 @@ function initFaqAccordionStability() {
       if (panel.__faqToken !== token) return;
       finalizePanel(panel, toOpen);
     };
+
     panel.__faqOnEnd = onEnd;
     panel.addEventListener("transitionend", onEnd);
-
     panel.__faqFallbackTimer = window.setTimeout(() => {
       if (panel.__faqToken !== token) return;
       finalizePanel(panel, toOpen);
-    }, getHeightTransitionFallbackMs(panel));
+    }, getCollapseTransitionMs(panel));
 
     requestAnimationFrame(() => {
       if (panel.__faqToken !== token) return;
@@ -1953,15 +1947,71 @@ function initFaqAccordionStability() {
     });
   };
 
+  const normalizeSingleOpenNow = (preferred = null) => {
+    const shown = panels.filter((panel) => panel.classList.contains("show"));
+    if (shown.length <= 1) return;
+    const keeper =
+      preferred && shown.includes(preferred)
+        ? preferred
+        : shown[shown.length - 1];
+    shown.forEach((panel) => {
+      if (panel === keeper) return;
+      finalizePanel(panel, false);
+    });
+  };
+
+  const measureMaxStateHeight = () => {
+    const width = Math.ceil(root.getBoundingClientRect().width || 0);
+    if (width <= 0) return 0;
+    const clone = root.cloneNode(true);
+    clone.removeAttribute("id");
+    clone.style.position = "absolute";
+    clone.style.left = "-100000px";
+    clone.style.top = "0";
+    clone.style.visibility = "hidden";
+    clone.style.pointerEvents = "none";
+    clone.style.width = `${width}px`;
+    clone.style.height = "auto";
+    clone.style.minHeight = "0";
+    clone.querySelectorAll(".accordion-collapse").forEach((p) => {
+      p.classList.remove("collapsing");
+      p.classList.add("collapse");
+      p.style.removeProperty("height");
+      p.style.removeProperty("overflow");
+    });
+    document.body.appendChild(clone);
+
+    const clonePanels = Array.from(clone.querySelectorAll(".accordion-collapse"));
+    let maxHeight = 0;
+    const applyState = (openIndex) => {
+      clonePanels.forEach((p, idx) => {
+        p.classList.toggle("show", idx === openIndex);
+      });
+      maxHeight = Math.max(maxHeight, clone.getBoundingClientRect().height);
+    };
+    applyState(-1);
+    clonePanels.forEach((_, idx) => applyState(idx));
+    clone.remove();
+    return Math.ceil(maxHeight);
+  };
+
+  const applyStableMinHeight = () => {
+    const h = measureMaxStateHeight();
+    if (h > 0) root.style.minHeight = `${h}px`;
+  };
+
   let desiredOpen = panels.find((panel) => panel.classList.contains("show")) || null;
-  panels.forEach((panel) => {
-    finalizePanel(panel, panel === desiredOpen);
-  });
+  panels.forEach((panel) => finalizePanel(panel, panel === desiredOpen));
+  normalizeSingleOpenNow(desiredOpen);
+  applyStableMinHeight();
+  const onFaqLayout =
+    window.__PH?.rafThrottle ? window.__PH.rafThrottle(applyStableMinHeight) : applyStableMinHeight;
+  window.addEventListener("load", onFaqLayout);
+  window.addEventListener("resize", onFaqLayout, { passive: true });
+  window.addEventListener("orientationchange", onFaqLayout, { passive: true });
 
   const applyDesiredState = () => {
-    panels.forEach((panel) => {
-      animatePanel(panel, panel === desiredOpen);
-    });
+    panels.forEach((panel) => animatePanel(panel, panel === desiredOpen));
   };
 
   root.addEventListener(
@@ -1981,12 +2031,19 @@ function initFaqAccordionStability() {
       const state = getState(target);
       const targetIsActive =
         desiredOpen === target && (state === "open" || state === "opening");
-
       desiredOpen = targetIsActive ? null : target;
       applyDesiredState();
     },
     true
   );
+
+  // Safety net: if any external code opens multiple, normalize to one.
+  root.addEventListener("transitionend", (e) => {
+    const panel = e.target;
+    if (!panelBySel.has(`#${panel.id}`)) return;
+    if (e.propertyName !== "height") return;
+    normalizeSingleOpenNow(desiredOpen);
+  });
 }
 
 /* ================================

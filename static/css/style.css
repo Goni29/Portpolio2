@@ -132,13 +132,20 @@ html.ua-ios body.page-home header.sticky-top {
   margin-bottom: calc(-1 * var(--header-h));
 }
 
+html.ua-ios body.page-sub.has-sub-hero header.sticky-top {
+  margin-bottom: calc(-1 * var(--header-h));
+}
+
 html.ua-ios header.sticky-top .navbar {
   position: relative;
 }
 
-html.ua-ios body.nav-lock #pageScroll,
-html.ua-ios body.modal-open #pageScroll {
+html.ua-ios body.nav-lock #pageScroll {
   overflow-y: hidden !important;
+}
+
+html.ua-ios body.modal-open #pageScroll {
+  overflow-y: auto !important;
 }
 
 /* Mobile: allow top overscroll (iOS/Android/Kakao) */
@@ -335,17 +342,41 @@ body.page-home .navbar.navbar-transparent.is-solid .nav-link:hover {
 }
 
 /* ✅ SUB에서는 네비가 항상 solid(겹침/투명 방지) */
-body.page-sub .navbar {
+body.page-sub .navbar.navbar-transparent {
   position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
   z-index: var(--z-navbar);
-  background: rgba(255, 255, 255, .96) !important;
+  background: transparent !important;
+  border-bottom: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  transition: background .25s ease, border-color .25s ease, backdrop-filter .25s ease;
+}
+
+body.page-sub .navbar.navbar-transparent .nav-link,
+body.page-sub .navbar.navbar-transparent .navbar-brand {
+  color: var(--on-dark-88) !important;
+}
+
+body.page-sub .navbar.navbar-transparent .nav-link:hover {
+  color: var(--on-dark) !important;
+}
+
+body.page-sub .navbar.navbar-transparent.is-solid {
+  background: rgba(var(--white-rgb), .86) !important;
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--line);
 }
 
-body.page-sub .navbar .nav-link,
-body.page-sub .navbar .navbar-brand {
+body.page-sub .navbar.navbar-transparent.is-solid .nav-link,
+body.page-sub .navbar.navbar-transparent.is-solid .navbar-brand {
   color: var(--ink-92) !important;
+}
+
+body.page-sub .navbar.navbar-transparent.is-solid .nav-link:hover {
+  color: var(--ink) !important;
 }
 
 /* =========================================================
@@ -826,6 +857,7 @@ body.page-sub .navbar .navbar-brand {
   background: transparent;
   box-shadow: 0 22px 80px rgba(0, 0, 0, .10);
   transform: translateZ(0);
+  isolation: isolate;
   transition: flex-basis .55s ease, filter .25s ease;
   flex: 0 0 var(--treat-slim);
 }
@@ -837,19 +869,35 @@ body.page-sub .navbar .navbar-brand {
 .t2-bg {
   position: absolute;
   inset: 0;
+  z-index: 0;
+  transform: scale(1.02) translateZ(0);
+  -webkit-transform: scale(1.02) translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
   background-size: cover;
   background-position: center;
-  transform: scale(1.02);
   transition: transform .45s ease;
 }
 
 .treat2-card:hover .t2-bg {
-  transform: scale(1.06);
+  transform: scale(1.06) translateZ(0);
+}
+
+/* Touch devices: suppress sticky hover zoom side effects */
+@media (hover: none) and (any-hover: none) {
+  .treat2-card:hover .t2-bg {
+    transform: scale(1.02) translateZ(0);
+  }
 }
 
 .t2-dim {
   position: absolute;
   inset: 0;
+  z-index: 1;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
   background: linear-gradient(180deg, rgba(0, 0, 0, .10), rgba(0, 0, 0, .62));
 }
 
@@ -859,6 +907,11 @@ body.page-sub .navbar .navbar-brand {
 
 .t2-content {
   position: relative;
+  z-index: 2;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
   height: 100%;
   padding: 26px;
   color: #fff;
@@ -1946,7 +1999,6 @@ html.js body.page-home .reveal-stagger.is-visible>*:nth-child(5) {
    Desktop only (992px 이상에서만 메가 메뉴 적용)
    ========================================================= */
 @media (min-width: 992px) {
-
   /* ✅ 메가 열릴 때 navbar를 solid로 강제 */
   header.sticky-top.mega-open .navbar.navbar-transparent {
     background: rgba(255, 255, 255, .96) !important;
@@ -2884,11 +2936,11 @@ header.sticky-top .navbar .nav-link {
 
 .address-map {
   border-radius: 0;
-  /* ??? ?? */
+  /* 지도 영역은 모서리를 자르지 않고 사각으로 유지 */
   overflow: hidden;
   background: #fff;
   border: 0;
-  /* ??? ?? */
+  /* iframe 기준 배치를 위해 컨테이너를 기준 박스로 설정 */
   position: relative;
 }
 
@@ -3296,6 +3348,15 @@ header.sticky-top .navbar .nav-link {
 }
 
 /* Signup modal (match site tone) */
+.modal-backdrop {
+  z-index: 8200 !important;
+}
+
+.modal {
+  z-index: 8210 !important;
+}
+
+/* Signup modal (match site tone) */
 .signup-modal {
   border-radius: 18px;
   border: 1px solid rgba(var(--ink-rgb), .12);
@@ -3699,6 +3760,36 @@ header.sticky-top .navbar .nav-link {
   font-size: 14px;
 }
 
+/* Reserve modals: keep close button reachable on small screens */
+@media (max-width: 991.98px) {
+  #confirmModal .modal-dialog,
+  #checkModal .modal-dialog {
+    margin: max(10px, calc(env(safe-area-inset-top) + 10px)) 10px 10px;
+  }
+
+  #confirmModal .modal-content,
+  #checkModal .modal-content {
+    max-height: calc(100dvh - max(10px, calc(env(safe-area-inset-top) + 10px)) - 10px);
+    display: flex;
+    flex-direction: column;
+  }
+
+  #confirmModal .rsv-head,
+  #checkModal .rsv-head {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #fff;
+  }
+
+  #confirmModal .rsv-body,
+  #checkModal .rsv-body {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+}
+
 /* =========================================================
    Calendar UI (NO ROUND + COMPACT + SKY badge)
    - 각진(네모) + 라인 기반 + 컴팩트
@@ -3808,7 +3899,7 @@ header.sticky-top .navbar .nav-link {
 /* 셀(컴팩트 높이) */
 .reserve-cal .cal-cell {
   min-height: 92px;
-  /* ??? ?? */
+  /* 셀 내부 요소 배치를 위한 기본 여백 */
   padding: 8px 8px 10px;
   border-right: 1px solid var(--cal-line);
   border-top: 1px solid var(--cal-line);
@@ -4716,6 +4807,55 @@ body.page-sub .navbar .nav-auth-link:hover {
 
 body.page-home header.sticky-top:not(.mega-open) .navbar.navbar-transparent:not(.is-solid) .nav-auth-link:focus-visible {
   outline-color: rgba(var(--white-rgb), .55);
+}
+
+/* SUB transparent state should match HOME transparent tone on desktop */
+body.page-sub header.sticky-top:not(.mega-open) .navbar.navbar-transparent:not(.is-solid) .nav-auth-link {
+  color: var(--on-dark-88) !important;
+}
+
+body.page-sub header.sticky-top:not(.mega-open) .navbar.navbar-transparent:not(.is-solid) .nav-auth-link:hover {
+  color: var(--on-dark) !important;
+}
+
+body.page-sub header.sticky-top:not(.mega-open) .navbar.navbar-transparent:not(.is-solid) .nav-auth-link::after {
+  background: var(--on-dark-55);
+}
+
+body.page-sub header.sticky-top:not(.mega-open) .navbar.navbar-transparent:not(.is-solid) .nav-auth-link:hover::after {
+  background: var(--on-dark-92);
+}
+
+body.page-sub .navbar.navbar-transparent.is-solid .nav-auth-link {
+  color: var(--ink-92) !important;
+}
+
+body.page-sub .navbar.navbar-transparent.is-solid .nav-auth-link:hover {
+  color: var(--ink) !important;
+}
+
+body.page-sub header.sticky-top:not(.mega-open) .navbar.navbar-transparent:not(.is-solid) .nav-auth-link:focus-visible {
+  outline-color: rgba(var(--white-rgb), .55);
+}
+
+@media (min-width: 992px) {
+  body.page-sub header.sticky-top:not(.mega-open) .navbar.navbar-transparent:not(.is-solid) .nav-reserve {
+    background: rgba(var(--white-rgb), .94) !important;
+    color: var(--ink) !important;
+    border-color: transparent !important;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, .18);
+  }
+
+  body.page-sub header.sticky-top:not(.mega-open) .navbar.navbar-transparent:not(.is-solid) .nav-reserve:hover,
+  body.page-sub header.sticky-top:not(.mega-open) .navbar.navbar-transparent:not(.is-solid) .nav-reserve:focus {
+    background: rgba(var(--white-rgb), 1) !important;
+    color: var(--ink) !important;
+  }
+
+  body.page-sub header.sticky-top:not(.mega-open) .navbar.navbar-transparent:not(.is-solid) .nav-reserve:focus-visible {
+    outline: 2px solid rgba(var(--white-rgb), .8);
+    outline-offset: 2px;
+  }
 }
 /* =========================================================
    Compact desktop stabilization (992px - 1366px)
@@ -6230,3 +6370,137 @@ body.page-home header.sticky-top:not(.mega-open) .navbar.navbar-transparent:not(
       font-size: 10.5px;
     }
   }
+}
+
+/* =========================================================
+   2026-02 polish overrides
+   ========================================================= */
+:root {
+  --mega-sync-open-ms: 340ms;
+  --mega-sync-close-ms: 280ms;
+  --mega-sync-ease: cubic-bezier(.16, 1, .3, 1);
+}
+
+@media (min-width: 992px) {
+  header.sticky-top .navbar.navbar-transparent {
+    transition:
+      background var(--mega-sync-open-ms) var(--mega-sync-ease),
+      border-color var(--mega-sync-open-ms) var(--mega-sync-ease),
+      backdrop-filter var(--mega-sync-open-ms) var(--mega-sync-ease),
+      box-shadow var(--mega-sync-open-ms) var(--mega-sync-ease);
+  }
+
+  header.sticky-top.mega-open .navbar.navbar-transparent {
+    background: rgba(255, 255, 255, .96) !important;
+    border-bottom: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .mega-global {
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      opacity var(--mega-sync-close-ms) var(--mega-sync-ease),
+      visibility 0s linear var(--mega-sync-close-ms);
+  }
+
+  header.sticky-top.mega-open .mega-global {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+    transition:
+      opacity var(--mega-sync-open-ms) var(--mega-sync-ease),
+      visibility 0s linear 0s;
+  }
+
+  .mega-global .mega-rail {
+    opacity: 0;
+    transform: translateY(-10px);
+    transition:
+      opacity var(--mega-sync-close-ms) ease,
+      transform var(--mega-sync-close-ms) var(--mega-sync-ease);
+  }
+
+  header.sticky-top.mega-open .mega-global .mega-rail {
+    opacity: 1;
+    transform: translateY(0);
+    transition-duration: var(--mega-sync-open-ms), var(--mega-sync-open-ms);
+    transition-delay: 36ms, 36ms;
+  }
+
+  .mega-global-inner {
+    border-top: 0;
+    border-radius: 0;
+    max-height: none;
+    opacity: 0;
+    transform-origin: top center;
+    transform: translateY(-10px) scaleY(.86);
+    transition:
+      opacity var(--mega-sync-close-ms) ease,
+      transform var(--mega-sync-close-ms) var(--mega-sync-ease);
+  }
+
+  header.sticky-top.mega-open .mega-global-inner {
+    max-height: none;
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+    transition-duration: var(--mega-sync-open-ms), var(--mega-sync-open-ms);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mega-global,
+  .mega-global .mega-rail,
+  .mega-global-inner {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1366px) {
+  html.ua-ios #n2 .row,
+  html.ua-android #n2 .row {
+    --bs-gutter-x: 0;
+    --bs-gutter-y: 24px;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  html.ua-ios #n2 .row > [class*="col-"],
+  html.ua-android #n2 .row > [class*="col-"] {
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    display: flex;
+    justify-content: center;
+  }
+
+  html.ua-ios #n2 .news-card,
+  html.ua-android #n2 .news-card {
+    width: clamp(520px, 72vw, 760px) !important;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  html.ua-ios #n2 .news-thumb,
+  html.ua-android #n2 .news-thumb {
+    height: clamp(220px, 28vw, 320px);
+  }
+}
+
+@media (max-width: 991.98px) {
+  body.page-sub .sub-hero-inner {
+    height: calc(100% - var(--header-h, 72px));
+    margin-top: var(--header-h, 72px);
+    align-items: center;
+    padding-top: 0;
+    padding-bottom: 0;
+    box-sizing: border-box;
+  }
+
+  body.page-sub .sub-hero-content {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+}

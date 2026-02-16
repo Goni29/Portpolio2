@@ -81,6 +81,9 @@ function initUserAgentFlags() {
    Treat2 (치료 탭 + 카드 레일)
    ================================ */
 function initTreat2() {
+  if (window.__treat2Init) return;
+  window.__treat2Init = true;
+
   const viewport = document.getElementById("treatViewport");
   const rail = document.getElementById("treatRail");
   const tabWrap = document.getElementById("treatTabs");
@@ -156,8 +159,14 @@ function initTreat2() {
   let isAnimating = false;
   let scrollRaf = null;
   let scrollEndTimer = null;
+  let touchDraggingX = false;
 
   const animateSwitch = (key) => {
+    const currentKey =
+      tabWrap.querySelector(".treat2-tab.is-active")?.dataset.key ||
+      rail.querySelector(".treat2-card.is-active")?.dataset.key ||
+      cards[0]?.dataset.key;
+    if (currentKey === key) return;
     if (isAnimating) return;
     isAnimating = true;
 
@@ -222,6 +231,7 @@ function initTreat2() {
 
   const onScroll = () => {
     if (!isMobileLayout()) return;
+    if (touchDraggingX) return;
     if (scrollRaf) return;
     scrollRaf = requestAnimationFrame(() => {
       scrollRaf = null;
@@ -287,6 +297,7 @@ function initTreat2() {
       touchStartY = t.clientY;
       touchStartScroll = viewport.scrollLeft;
       touchIntent = null;
+      touchDraggingX = false;
       touchStartKey = getCenterKey() || getActiveKey();
       touchStartT = performance.now();
     },
@@ -309,6 +320,7 @@ function initTreat2() {
       }
 
       if (touchIntent === "x") {
+        touchDraggingX = true;
         e.preventDefault();
         viewport.scrollLeft = touchStartScroll - dx;
       }
@@ -322,6 +334,7 @@ function initTreat2() {
       if (!isMobileLayout()) return;
       const t = e.changedTouches[0];
       if (!t) return;
+      touchDraggingX = false;
       touchIntent = null;
       const dx = t.clientX - touchStartX;
       const dy = t.clientY - touchStartY;
@@ -333,7 +346,10 @@ function initTreat2() {
       const isHorizontal = absX > absY * 1.1;
       const isSwipe = absX >= 14 && isHorizontal;
       const isFlick = dt <= 220 && v >= 0.22 && absX >= 8 && isHorizontal;
-      if (!isSwipe && !isFlick) return;
+      if (!isSwipe && !isFlick) {
+        scheduleScrollEnd();
+        return;
+      }
 
       const baseKey = touchStartKey || getCenterKey() || getActiveKey();
       const baseIdx = getIndexByKey(baseKey);
@@ -355,6 +371,7 @@ function initTreat2() {
     "touchcancel",
     () => {
       if (!isMobileLayout()) return;
+      touchDraggingX = false;
       touchIntent = null;
     },
     { passive: true }
@@ -712,6 +729,11 @@ function initDoctorSlider() {
     let swipeMaxDx = 0;
     let swipeMinDx = 0;
     let swipePeakVX = 0;
+    const TOUCH_INTENT_PX = 8;
+    const TOUCH_AXIS_RATIO = 1.12;
+    let touchPrimed = false;
+    let touchPrimedX = 0;
+    let touchPrimedY = 0;
     const rebaseToReal = () => {
       const center = viewport.scrollLeft + viewport.clientWidth / 2;
       let best = null;
@@ -910,7 +932,9 @@ function initDoctorSlider() {
       (e) => {
         if (e.touches.length !== 1) return;
         const t = e.touches[0];
-        onSwipeStart(t.clientX, t.clientY);
+        touchPrimed = true;
+        touchPrimedX = t.clientX;
+        touchPrimedY = t.clientY;
       },
       { passive: true }
     );
@@ -918,9 +942,27 @@ function initDoctorSlider() {
     viewport.addEventListener(
       "touchmove",
       (e) => {
-        if (!swipeActive) return;
         if (e.touches.length !== 1) return;
         const t = e.touches[0];
+        if (!swipeActive) {
+          if (!touchPrimed) return;
+          const dx = t.clientX - touchPrimedX;
+          const dy = t.clientY - touchPrimedY;
+          const absX = Math.abs(dx);
+          const absY = Math.abs(dy);
+
+          if (absX < TOUCH_INTENT_PX && absY < TOUCH_INTENT_PX) return;
+
+          if (absX > absY * TOUCH_AXIS_RATIO) {
+            onSwipeStart(touchPrimedX, touchPrimedY);
+            touchPrimed = false;
+          } else if (absY > absX * TOUCH_AXIS_RATIO) {
+            touchPrimed = false;
+            return;
+          } else {
+            return;
+          }
+        }
         onSwipeMove(t.clientX, t.clientY, e);
       },
       { passive: false }
@@ -930,16 +972,19 @@ function initDoctorSlider() {
       "touchend",
       (e) => {
         const t = e.changedTouches[0];
+        touchPrimed = false;
         if (!t) {
           onSwipeCancel();
           return;
         }
+        if (!swipeActive) return;
         onSwipeEnd(t.clientX, t.clientY);
       },
       { passive: true }
     );
 
     viewport.addEventListener("touchcancel", () => {
+      touchPrimed = false;
       onSwipeCancel();
     }, { passive: true });
 
@@ -1188,10 +1233,13 @@ function initNavbarHomeTransparent() {
   const nav = document.querySelector(".navbar.navbar-transparent");
   if (!nav) return;
 
-  const hero = document.querySelector(".hero-wrap");
   const isHome = document.body.classList.contains("page-home");
+  const isSub = document.body.classList.contains("page-sub");
+  if (!isHome && !isSub) return;
 
-  if (!isHome) return; // 서브는 현재 로직 유지(필요하면 여기서 분기 확장)
+  const hero = isHome
+    ? document.querySelector(".hero-wrap")
+    : document.querySelector(".sub-hero");
 
   if (hero) {
     const io = new IntersectionObserver((entries) => {
@@ -1704,14 +1752,62 @@ function initModalScrollFix() {
   if (window.__modalScrollFixInit) return;
   window.__modalScrollFixInit = true;
 
+  const normalizeBeforeModal = () => {
+    const topNav = document.getElementById("topNav");
+    if (topNav) {
+      if (topNav.classList.contains("show")) {
+        try {
+          const inst = window.bootstrap?.Collapse?.getOrCreateInstance(topNav, { toggle: false });
+          inst?.hide?.();
+        } catch (_) {
+          topNav.classList.remove("show");
+        }
+      }
+      topNav.classList.remove(
+        "mnav-nav-closing",
+        "mnav-nav-closing-run",
+        "mnav-closing",
+        "mnav-has-open",
+        "mnav-opening",
+        "nav-switching",
+        "mnav-switching-out",
+        "mnav-switching-in"
+      );
+    }
+
+    document.body.classList.remove("nav-lock");
+    document.body.__mnavScrollLocked = false;
+    if (document.documentElement.style.overscrollBehavior) {
+      document.documentElement.style.overscrollBehavior = "";
+    }
+  };
+
   const cleanup = () => {
     if (document.querySelector(".modal.show")) return;
+    document.querySelectorAll(".modal-backdrop").forEach((el) => el.remove());
     document.body.classList.remove("modal-open");
     document.body.style.removeProperty("overflow");
     document.body.style.removeProperty("padding-right");
   };
 
+  const moveBackdropsIntoPageScroll = () => {
+    if (!window.__PH?.usePageScrollRoot?.()) return;
+    const root = window.__PH?.getPageScrollRoot?.();
+    if (!root) return;
+    document.querySelectorAll("body > .modal-backdrop").forEach((el) => {
+      root.appendChild(el);
+    });
+  };
+
+  const onModalShow = () => {
+    normalizeBeforeModal();
+    moveBackdropsIntoPageScroll();
+  };
+
+  document.addEventListener("show.bs.modal", onModalShow);
+  document.addEventListener("shown.bs.modal", onModalShow);
   document.addEventListener("hidden.bs.modal", cleanup);
+  normalizeBeforeModal();
   cleanup();
 }
 
@@ -2290,6 +2386,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   function applySubNavOffset() {
     const body = document.body;
+    const hasSubHero = !!document.querySelector(".sub-hero");
+    body.classList.toggle("has-sub-hero", hasSubHero);
     const pageScrollRoot = window.__PH?.getPageScrollRoot?.() || null;
     const usePageRoot = !!window.__PH?.usePageScrollRoot?.() && !!pageScrollRoot;
     const padTarget = usePageRoot ? pageScrollRoot : body;
@@ -2297,14 +2395,26 @@ document.addEventListener("DOMContentLoaded", () => {
       padTarget.style.removeProperty("padding-top");
       if (padTarget !== body) body.style.removeProperty("padding-top");
     };
+    const forceZeroPadding = () => {
+      padTarget.style.setProperty("padding-top", "0px", "important");
+      if (padTarget !== body) body.style.setProperty("padding-top", "0px", "important");
+    };
 
     if (!body.classList.contains("page-sub")) {
       clearPadding();
       return;
     }
 
+    if (hasSubHero) {
+      forceZeroPadding();
+      return;
+    }
+
     const header = document.querySelector("header.sticky-top");
-    if (!header) return;
+    if (!header) {
+      clearPadding();
+      return;
+    }
 
     const pos = window.getComputedStyle(header).position;
     if (pos !== "fixed") {

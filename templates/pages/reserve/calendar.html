@@ -46,8 +46,8 @@
      Confirm Modal (Reference style)
      - 날짜 클릭하면 바로 뜸
      ========================= -->
-<div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="false">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content rsv-modal">
 
             <div class="modal-header rsv-head">
@@ -188,8 +188,8 @@
      Reserve Check Modal (조회하기)
      - 상단 "예약확인" 버튼 전용
      ========================= -->
-<div class="modal fade" id="checkModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+<div class="modal fade" id="checkModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="false">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content rsv-modal">
 
             <div class="modal-header rsv-head">
@@ -384,7 +384,13 @@
         function getReserveModal() {
             const el = document.getElementById("confirmModal");
             if (!el || !window.bootstrap) return null;
-            if (!reserveModal) reserveModal = new bootstrap.Modal(el);
+            if (!reserveModal) {
+                reserveModal = new bootstrap.Modal(el, {
+                    backdrop: false,
+                    keyboard: true,
+                    focus: true
+                });
+            }
             return reserveModal;
         }
 
@@ -392,7 +398,13 @@
         function getCheckModal() {
             const el = document.getElementById("checkModal");
             if (!el || !window.bootstrap) return null;
-            if (!checkModal) checkModal = new bootstrap.Modal(el);
+            if (!checkModal) {
+                checkModal = new bootstrap.Modal(el, {
+                    backdrop: false,
+                    keyboard: true,
+                    focus: true
+                });
+            }
             return checkModal;
         }
 

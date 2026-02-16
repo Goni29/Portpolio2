@@ -1812,6 +1812,212 @@ function initModalScrollFix() {
 }
 
 /* ================================
+   FAQ accordion stability
+   - fast click race를 막고 항상 1개만 열림 유지
+   ================================ */
+function initFaqAccordionStability() {
+  const root = document.getElementById("faqAcc");
+  if (!root || root.__faqStableInit) return;
+  root.__faqStableInit = true;
+
+  const panels = Array.from(root.querySelectorAll(".accordion-collapse[id]"));
+  if (!panels.length) return;
+  const buttons = Array.from(root.querySelectorAll(".accordion-button[data-bs-target]"));
+  const panelBySel = new Map(panels.map((p) => [`#${p.id}`, p]));
+  buttons.forEach((btn) => btn.removeAttribute("data-bs-toggle"));
+  const prefersReducedMotion =
+    window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true;
+
+  const getButton = (panel) =>
+    root.querySelector(`.accordion-button[data-bs-target="#${panel.id}"]`);
+
+  const setState = (panel, state) => {
+    panel.dataset.phState = state;
+  };
+
+  const setButtonState = (panel, isOpenLike) => {
+    const btn = getButton(panel);
+    if (!btn) return;
+    btn.classList.toggle("collapsed", !isOpenLike);
+    btn.setAttribute("aria-expanded", isOpenLike ? "true" : "false");
+  };
+
+  const clearInline = (panel) => {
+    panel.style.removeProperty("height");
+    panel.style.removeProperty("overflow");
+  };
+
+  const parseCssTimeListToMs = (value) => {
+    if (!value) return 0;
+    return value
+      .split(",")
+      .map((v) => v.trim())
+      .map((v) => {
+        if (!v) return 0;
+        if (v.endsWith("ms")) return parseFloat(v) || 0;
+        if (v.endsWith("s")) return (parseFloat(v) || 0) * 1000;
+        return parseFloat(v) || 0;
+      })
+      .reduce((max, cur) => (cur > max ? cur : max), 0);
+  };
+
+  const getHeightTransitionFallbackMs = (panel) => {
+    const cs = window.getComputedStyle(panel);
+    const durationMs = parseCssTimeListToMs(cs.transitionDuration);
+    const delayMs = parseCssTimeListToMs(cs.transitionDelay);
+    const total = durationMs + delayMs;
+    if (!Number.isFinite(total) || total <= 0) return 420;
+    return Math.ceil(total + 70);
+  };
+
+  const cleanupTransition = (panel) => {
+    panel.__faqToken = (panel.__faqToken || 0) + 1;
+    if (typeof panel.__faqOnEnd === "function") {
+      panel.removeEventListener("transitionend", panel.__faqOnEnd);
+      panel.__faqOnEnd = null;
+    }
+    if (panel.__faqFallbackTimer) {
+      window.clearTimeout(panel.__faqFallbackTimer);
+      panel.__faqFallbackTimer = 0;
+    }
+  };
+
+  const finalizeOpen = (panel) => {
+    cleanupTransition(panel);
+    panel.classList.remove("collapsing");
+    panel.classList.add("collapse", "show");
+    clearInline(panel);
+    setState(panel, "open");
+    setButtonState(panel, true);
+  };
+
+  const finalizeClosed = (panel) => {
+    cleanupTransition(panel);
+    panel.classList.remove("collapsing", "show");
+    panel.classList.add("collapse");
+    clearInline(panel);
+    setState(panel, "closed");
+    setButtonState(panel, false);
+  };
+
+  const animatePanel = (panel, toOpen) => {
+    cleanupTransition(panel);
+    const token = panel.__faqToken;
+    const wasCollapsing = panel.classList.contains("collapsing");
+    const wasShown = panel.classList.contains("show");
+    const wasClosed = !wasCollapsing && !wasShown;
+    let start = 0;
+    let end = 0;
+
+    if (toOpen) {
+      panel.classList.remove("collapse", "show");
+      panel.classList.add("collapsing");
+      panel.style.overflow = "hidden";
+
+      if (wasClosed) {
+        start = 0;
+        panel.style.height = "0px";
+        end = panel.scrollHeight;
+      } else {
+        start = panel.getBoundingClientRect().height;
+        panel.style.height = `${start}px`;
+        end = panel.scrollHeight;
+      }
+    } else {
+      if (wasClosed) {
+        finalizeClosed(panel);
+        return;
+      }
+
+      panel.classList.remove("collapse", "show");
+      panel.classList.add("collapsing");
+      panel.style.overflow = "hidden";
+      start = panel.getBoundingClientRect().height;
+      panel.style.height = `${start}px`;
+      end = 0;
+    }
+
+    if (prefersReducedMotion || Math.abs(start - end) < 1) {
+      if (toOpen) finalizeOpen(panel);
+      else finalizeClosed(panel);
+      return;
+    }
+
+    // Reflow to make sure the next height change animates.
+    panel.offsetHeight;
+
+    const onEnd = (ev) => {
+      if (ev.target !== panel || ev.propertyName !== "height") return;
+      if (panel.__faqToken !== token) return;
+      if (toOpen) finalizeOpen(panel);
+      else finalizeClosed(panel);
+    };
+    panel.__faqOnEnd = onEnd;
+    panel.addEventListener("transitionend", onEnd);
+
+    const fallbackMs = getHeightTransitionFallbackMs(panel);
+    panel.__faqFallbackTimer = window.setTimeout(() => {
+      if (panel.__faqToken !== token) return;
+      if (toOpen) finalizeOpen(panel);
+      else finalizeClosed(panel);
+    }, fallbackMs);
+
+    requestAnimationFrame(() => {
+      if (panel.__faqToken !== token) return;
+      panel.style.height = `${end}px`;
+    });
+
+    setState(panel, toOpen ? "opening" : "closing");
+    setButtonState(panel, toOpen);
+  };
+
+  let desiredOpen = null;
+  panels.forEach((panel) => {
+    if (!desiredOpen && panel.classList.contains("show")) desiredOpen = panel;
+  });
+  panels.forEach((panel) => {
+    if (panel !== desiredOpen && panel.classList.contains("show")) {
+      finalizeClosed(panel);
+    }
+  });
+
+  const applyDesiredState = () => {
+    panels.forEach((panel) => {
+      animatePanel(panel, panel === desiredOpen);
+    });
+  };
+
+  root.addEventListener(
+    "click",
+    (e) => {
+      const btn = e.target.closest(".accordion-button[data-bs-target]");
+      if (!btn || !root.contains(btn)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof e.stopImmediatePropagation === "function") e.stopImmediatePropagation();
+
+      const sel = btn.getAttribute("data-bs-target");
+      if (!sel) return;
+      const target = panelBySel.get(sel);
+      if (!target) return;
+
+      const targetIsActive =
+        desiredOpen === target &&
+        (target.dataset.phState === "opening" || target.classList.contains("show"));
+      desiredOpen = targetIsActive ? null : target;
+      applyDesiredState();
+    },
+    true
+  );
+
+  panels.forEach((panel) => {
+    const isOpen = panel === desiredOpen;
+    setState(panel, isOpen ? "open" : "closed");
+    setButtonState(panel, isOpen);
+  });
+}
+
+/* ================================
    Header metrics
    ================================ */
 function initHeaderMetrics() {
@@ -1847,6 +2053,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initDoctorSlider();
   initScrollReveal();
   initTabsFadeReplay();
+  initFaqAccordionStability();
   initNavbarHomeTransparent();
   initMegaMenu();
   initScrollSafety();

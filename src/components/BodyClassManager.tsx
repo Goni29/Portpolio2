@@ -8,22 +8,10 @@ export default function BodyClassManager() {
 
   useEffect(() => {
     if (pathname === "/") {
-      document.body.classList.add("page-home");
-      document.body.classList.remove("page-sub");
+      document.body.className = "page-home";
     } else {
-      document.body.classList.add("page-sub");
-      document.body.classList.remove("page-home");
+      document.body.className = "page-sub";
     }
-  }, [pathname]);
-
-  // Re-initialize main.js behaviors on route change
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      // Trigger re-initialization of main.js event listeners
-      window.dispatchEvent(new Event("DOMContentLoaded"));
-      window.dispatchEvent(new Event("load"));
-    }, 100);
-    return () => clearTimeout(timer);
   }, [pathname]);
 
   return null;

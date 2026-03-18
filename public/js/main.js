@@ -2072,6 +2072,8 @@ function initHeaderMetrics() {
    Boot
    ================================ */
 document.addEventListener("DOMContentLoaded", () => {
+  if (window.__PH_BOOTED) return;
+  window.__PH_BOOTED = true;
   initUserAgentFlags();
   initHeaderMetrics();
   initNavbarBounceSync();
@@ -2694,4 +2696,27 @@ document.addEventListener("DOMContentLoaded", () => {
     safeCall("initDoctorSlider");
   });
 })();
+
+/* ================================
+   Safety net: re-run boot if DOMContentLoaded was missed
+   (Next.js static export may load scripts after DOMContentLoaded)
+   ================================ */
+if (document.readyState !== "loading" && !window.__PH_BOOTED) {
+  window.__PH_BOOTED = true;
+  initUserAgentFlags();
+  initHeaderMetrics();
+  initNavbarBounceSync();
+  initTreat2();
+  initHeroIndicators();
+  initHeroScrollHint();
+  initHomeBackToTop();
+  initDoctorSlider();
+  initScrollReveal();
+  initTabsFadeReplay();
+  initFaqAccordionStability();
+  initNavbarHomeTransparent();
+  initMegaMenu();
+  initScrollSafety();
+  initModalScrollFix();
+}
 

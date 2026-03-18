@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import BodyClassManager from "@/components/BodyClassManager";
 
 export const metadata: Metadata = {
@@ -64,7 +63,7 @@ export default function RootLayout({
         />
         <link href="/css/style.css" rel="stylesheet" />
       </head>
-      <body className="page-home">
+      <body>
         <BodyClassManager />
         <div id="pageScroll" className="page-scroll">
           <header className="sticky-top">
@@ -264,11 +263,11 @@ export default function RootLayout({
           </footer>
         </div>
 
-        <Script
+        <script
           src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-          strategy="afterInteractive"
+          defer
         />
-        <Script src="/js/main.js" strategy="afterInteractive" />
+        <script src="/js/main.js" defer />
       </body>
     </html>
   );

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import BodyClassManager from "@/components/BodyClassManager";
 
 export const metadata: Metadata = {
   title: "포트폴리오병원",
@@ -63,7 +64,8 @@ export default function RootLayout({
         />
         <link href="/css/style.css" rel="stylesheet" />
       </head>
-      <body>
+      <body className="page-home">
+        <BodyClassManager />
         <div id="pageScroll" className="page-scroll">
           <header className="sticky-top">
             <nav className="navbar navbar-expand-lg navbar-light navbar-transparent">

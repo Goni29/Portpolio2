@@ -1,5 +1,3 @@
-import Script from "next/script";
-
 const noticePreview = [
   { id: 1, title: "2026년 설 연휴 진료 안내", created_at: "2026-01-20" },
   { id: 2, title: "3월 진료시간 변경 안내", created_at: "2026-02-28" },
@@ -15,14 +13,6 @@ const newsPreview = [
 export default function Home() {
   return (
     <>
-      <Script
-        id="set-body-class-home"
-        strategy="afterInteractive"
-        dangerouslySetInnerHTML={{
-          __html: `document.body.classList.add('page-home');document.body.classList.remove('page-sub');`,
-        }}
-      />
-
       {/* HERO */}
       <section className="hero-wrap">
         <div
